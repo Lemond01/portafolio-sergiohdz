@@ -1930,21 +1930,34 @@ window.addEventListener('resize', () => {
    page actually has something to scroll (e.g. once a project's content
    makes the page taller than the viewport).
    ============================================================ */
+let scrollbarUpdateQueued = false;
+
+// Native 'scroll' events can fire more than once per frame (and definitely
+// fire on every 'resize'/ResizeObserver tick too), each one doing a
+// read-then-write on layout properties. Collapsing all of that into at
+// most one read+write per animation frame keeps it from ever competing
+// with the browser's own paint work during an active scroll or resize.
 function updatePageScrollbar() {
-  if (!pageScrollbar || !pageScrollbarThumb) return;
+  if (scrollbarUpdateQueued) return;
+  scrollbarUpdateQueued = true;
 
-  const html = document.documentElement;
-  const scrollable = html.scrollHeight > html.clientHeight + 1;
-  pageScrollbar.classList.toggle('visible', scrollable);
-  if (!scrollable) return;
+  requestAnimationFrame(() => {
+    scrollbarUpdateQueued = false;
+    if (!pageScrollbar || !pageScrollbarThumb) return;
 
-  const trackHeight = html.clientHeight;
-  const thumbHeight = Math.max(40, (trackHeight / html.scrollHeight) * trackHeight);
-  const maxThumbTop = trackHeight - thumbHeight;
-  const scrollRatio = html.scrollTop / (html.scrollHeight - html.clientHeight);
+    const html = document.documentElement;
+    const scrollable = html.scrollHeight > html.clientHeight + 1;
+    pageScrollbar.classList.toggle('visible', scrollable);
+    if (!scrollable) return;
 
-  pageScrollbarThumb.style.height = `${thumbHeight}px`;
-  pageScrollbarThumb.style.transform = `translateY(${scrollRatio * maxThumbTop}px)`;
+    const trackHeight = html.clientHeight;
+    const thumbHeight = Math.max(40, (trackHeight / html.scrollHeight) * trackHeight);
+    const maxThumbTop = trackHeight - thumbHeight;
+    const scrollRatio = html.scrollTop / (html.scrollHeight - html.clientHeight);
+
+    pageScrollbarThumb.style.height = `${thumbHeight}px`;
+    pageScrollbarThumb.style.transform = `translateY(${scrollRatio * maxThumbTop}px)`;
+  });
 }
 
 window.addEventListener('scroll', updatePageScrollbar, { passive: true });

@@ -1454,16 +1454,20 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 /* Pulse rings ocultos inicialmente */
 .pulse-ring {
   position: absolute;
-  width: 120px;
-  height: 120px;
+  /* Fixed at the *final* (fully expanded) size — the "growing" look now
+     comes entirely from `transform: scale()` in @keyframes pulse-wave
+     below (0.3 -> 1.1), not from animating width/height, so the ring
+     never triggers layout during the animation. */
+  width: 400px;
+  height: 400px;
   border-radius: 50%;
   z-index: 1;
   opacity: 0;
   pointer-events: none;
-  border: 3px solid #00c3ff;
+  border: 2px solid #00c3ff;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(0.3);
 }
 
 .pulse-ring.active {
@@ -1484,7 +1488,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   animation: pulseText 2s ease-in-out infinite;
   margin-top: 2.5rem;
   flex-shrink: 0;
-  transition: all 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 /* Estado de loading (cuando ya se presionó) */
@@ -1758,41 +1762,30 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   to   { opacity: 1; }
 }
 
+/* box-shadow isn't GPU-compositable (it repaints every frame), so the
+   "glow intensifies with the beat" part was dropped here — the static
+   glow on .loading-logo (box-shadow, unanimated) stays as-is, and the
+   beat itself now only drives `transform: scale()`. */
 @keyframes single-beat {
-  0%   { transform: scale(1);   box-shadow: 0 0 20px rgba(0, 195, 255, 0.3); }
-  25%  { transform: scale(1.15); box-shadow: 0 0 50px rgba(0, 195, 255, 0.7); }
-  35%  { transform: scale(1.1);  box-shadow: 0 0 40px rgba(0, 195, 255, 0.5); }
-  45%  { transform: scale(1);   box-shadow: 0 0 20px rgba(0, 195, 255, 0.3); }
-  100% { transform: scale(1);   box-shadow: 0 0 20px rgba(0, 195, 255, 0.3); }
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.15); }
+  35%  { transform: scale(1.1); }
+  45%  { transform: scale(1); }
+  100% { transform: scale(1); }
 }
 
+/* "Sonar ping" ring: same growing-and-fading look as the original
+   width/height/border-width version, but achieved purely with transform
+   (scale) + opacity so it's fully GPU-compositable instead of forcing a
+   layout+paint on every frame. .pulse-ring is already sized to the final
+   (100%) dimensions, so 0.3 here is that original small starting size as
+   a fraction of the final one (e.g. 120px start / 400px final). */
 @keyframes pulse-wave {
-  0% {
-    width: 120px;
-    height: 120px;
-    opacity: 0.9;
-    border-width: 2px;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  20% {
-    opacity: 0.7;
-    border-width: 1.5px;
-  }
-  50% {
-    opacity: 0.4;
-    border-width: 1px;
-  }
-  80% {
-    opacity: 0.1;
-    border-width: 0.5px;
-  }
-  100% {
-    width: 400px;
-    height: 400px;
-    opacity: 0;
-    border-width: 0;
-    transform: translate(-50%, -50%) scale(1.1);
-  }
+  0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(0.3); }
+  20%  { opacity: 0.7; }
+  50%  { opacity: 0.4; }
+  80%  { opacity: 0.1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 /* ============================================================
@@ -1836,8 +1829,9 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
     height: 90px;
   }
   .pulse-ring {
-    width: 90px;
-    height: 90px;
+    width: 300px;
+    height: 300px;
+    transform: translate(-50%, -50%) scale(0.3);
   }
   .pulse-ring.active {
     animation-duration: 1.5s;
@@ -1847,20 +1841,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
     margin-top: 2rem;
   }
   @keyframes pulse-wave {
-    0% {
-      width: 90px;
-      height: 90px;
-      opacity: 0.9;
-      border-width: 2px;
-      transform: translate(-50%, -50%) scale(1);
-    }
-    100% {
-      width: 300px;
-      height: 300px;
-      opacity: 0;
-      border-width: 0;
-      transform: translate(-50%, -50%) scale(1.1);
-    }
+    0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(0.3); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
   }
 
   .search-overlay { padding-top: 1.5rem; }
@@ -2119,39 +2101,19 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
     height: 170px;
   }
   .pulse-ring {
-    width: 170px;
-    height: 170px;
+    width: 560px;
+    height: 560px;
+    transform: translate(-50%, -50%) scale(0.3);
   }
   .start-prompt-text {
     font-size: 1.2rem;
     margin-top: 2.5rem;
   }
   @keyframes pulse-wave {
-    0% {
-      width: 170px;
-      height: 170px;
-      opacity: 0.9;
-      border-width: 2.5px;
-      transform: translate(-50%, -50%) scale(1);
-    }
-    20% {
-      opacity: 0.7;
-      border-width: 2px;
-    }
-    50% {
-      opacity: 0.4;
-      border-width: 1.5px;
-    }
-    80% {
-      opacity: 0.1;
-      border-width: 0.5px;
-    }
-    100% {
-      width: 560px;
-      height: 560px;
-      opacity: 0;
-      border-width: 0;
-      transform: translate(-50%, -50%) scale(1.1);
-    }
+    0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(0.3); }
+    20%  { opacity: 0.7; }
+    50%  { opacity: 0.4; }
+    80%  { opacity: 0.1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
   }
 }
