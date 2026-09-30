@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Portfolio | LemondG</title>
+  <meta name="description" content="Sergio Hernández — game developer portfolio. Unreal Engine, Godot and web games, plus 3D art in Blender." />
+  <meta name="theme-color" content="#000000" />
+
+  <!-- Open Graph / social preview (LinkedIn, Discord, etc.) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Portfolio | LemondG" />
+  <meta property="og:description" content="Sergio Hernández — game developer portfolio. Unreal Engine, Godot and web games, plus 3D art in Blender." />
+  <meta property="og:image" content="assets/shared/social-preview.jpg" />
+
+  <!-- Twitter card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Portfolio | LemondG" />
+  <meta name="twitter:description" content="Sergio Hernández — game developer portfolio. Unreal Engine, Godot and web games, plus 3D art in Blender." />
+  <meta name="twitter:image" content="assets/shared/social-preview.jpg" />
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/shared/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/shared/apple-touch-icon.png" />
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css"
+        integrity="sha384-fZCoUih8XsaUZnNDOiLqnby1tMJ0sE7oBbNk2Xxf5x8Z4SvNQ9j83vFMa/erbVrV"
+        crossorigin="anonymous" referrerpolicy="no-referrer"
+        media="print" onload="this.media='all'" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+</head>
+<body>
+
+  <!-- PAGE BACKGROUND: shows the selected project's key art behind everything -->
+  <div id="page-background" class="page-background"></div>
+
+  <!-- CUSTOM PAGE SCROLLBAR: an overlay drawn above the content instead of a
+       native scrollbar, so it never reserves layout space or shifts anything.
+       Only shown (via JS) while the page actually has something to scroll. -->
+  <div id="page-scrollbar" class="page-scrollbar" aria-hidden="true">
+    <div id="page-scrollbar-thumb" class="page-scrollbar-thumb"></div>
+  </div>
+
+  <!-- LOADING SCREEN -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-container" id="loading-container">
+      <!-- START PROMPT - TODO EL CONTENEDOR ES CLICKEABLE -->
+      <div id="start-prompt" class="start-prompt">
+        <!-- LOGO WRAPPER: Logo + Pulse Rings centrados -->
+        <div class="logo-wrapper" id="logo-wrapper">
+          <div class="loading-logo" id="loading-logo">
+            <img src="assets/shared/logo.jpg" alt="Lemond Logo" class="img-hide-on-error">
+          </div>
+          <div class="pulse-ring" id="pulse-ring-1"></div>
+          <div class="pulse-ring pulse-ring-delay-1" id="pulse-ring-2"></div>
+          <div class="pulse-ring pulse-ring-delay-2" id="pulse-ring-3"></div>
+        </div>
+        <!-- TEXTO DEBIJO DEL LOGO -->
+        <p class="start-prompt-text" id="start-prompt-text">Press Screen to continue</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH OVERLAY -->
+  <div id="search-overlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="Search">
+    <div class="search-overlay-bg"></div>
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <i class="fa-solid fa-magnifying-glass search-input-icon" aria-hidden="true"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search projects, engines, tools..." autocomplete="off" />
+        <button id="search-close-btn" class="search-close-btn" aria-label="Close search">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="search-results" id="search-results">
+        <div class="search-default" id="search-default">
+          <p class="search-section-label">Suggested</p>
+          <div class="search-suggestions">
+            <div class="search-suggestion-item" data-search="All" role="button" tabindex="0">
+              <i class="fa-solid fa-grid-2" aria-hidden="true"></i>
+              <span>All Projects</span>
+            </div>
+            <div class="search-suggestion-item" data-search="Unreal Engine" role="button" tabindex="0">
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              <span>Unreal Engine</span>
+            </div>
+            <div class="search-suggestion-item" data-search="Blender" role="button" tabindex="0">
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              <span>Blender</span>
+            </div>
+          </div>
+        </div>
+        <div class="search-dynamic" id="search-dynamic" style="display: none;"></div>
+        <div class="search-empty" id="search-empty" style="display: none;">
+          <p>No results found</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIO PLAYER -->
+  <audio id="welcome-audio" preload="none" loop>
+    <source src="assets/audio/ambient-music.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-container" id="main-container">
+
+    <!-- HEADER -->
+    <header class="main-header" id="main-header">
+      <div class="header-brand" id="header-brand" role="button" tabindex="0" aria-label="Go home">Portfolio</div>
+      <div class="header-right">
+        <button id="search-btn" class="icon-btn" aria-label="Search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        </button>
+        <button id="profile-btn" class="icon-btn profile-btn" aria-label="Profile">
+          <img src="assets/shared/logo.jpg" alt="" class="img-hide-on-error">
+        </button>
+        <span id="time-display" class="time-display">00:00 AM</span>
+      </div>
+    </header>
+
+    <!-- DYNAMIC CONTENT: home grid (all projects + engine filters), or a single engine's projects -->
+    <div id="content-container" class="content-container hidden"></div>
+
+    <!-- PROFILE -->
+    <div id="profile-container" class="profile-container hidden"></div>
+
+  </main>
+
+  <!-- LIGHTBOX PARA IMÁGENES DEL CARRUSEL -->
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <div class="lightbox-overlay"></div>
+    <button id="lightbox-close" class="lightbox-close" aria-label="Close image viewer">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+    <div class="lightbox-content">
+      <img id="lightbox-image" src="" alt="Imagen ampliada">
+    </div>
+    <!-- Botones de navegación del lightbox -->
+    <button id="lightbox-prev" class="lightbox-nav lightbox-prev" aria-label="Previous image">
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+    </button>
+    <button id="lightbox-next" class="lightbox-nav lightbox-next" aria-label="Next image">
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

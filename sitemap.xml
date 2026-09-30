@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  This is a single-page app — every project/section lives behind JS
+  routing on this one URL, so there's only one real page to list here.
+  A sitemap adds little for a one-page site, but it's wired up correctly
+  for when that changes (e.g. if projects ever get their own URLs).
+
+  Replace https://example.com/ below with your real deployed domain, and
+  update <lastmod> when you make a meaningful content change.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
