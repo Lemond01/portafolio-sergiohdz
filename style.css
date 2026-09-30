@@ -274,7 +274,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   display: flex;
   flex-direction: column;
   max-height: 75vh;
-  animation: searchSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: searchSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes searchSlideDown {
@@ -538,7 +538,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   font-weight: 500;
   padding: 0.55rem 1.2rem;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
   outline: none;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
@@ -692,12 +692,19 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   width: var(--project-card-size);
 }
 
-/* Mirror-shine sweep, brought over from the old welcome-screen cards. */
+/* Mirror-shine sweep, brought over from the old welcome-screen cards.
+   Positioned with a static `left`, then moved entirely via `transform:
+   translateX()` in the animation below — animating `left` directly would
+   run a layout-eligible property in an infinite loop on every card in the
+   carousel at once, forever, instead of a GPU-compositable one. The
+   translateX percentages below are relative to *this element's own* 60%-
+   wide box, so -167%/250% reproduce the same -100%/150%-of-parent travel
+   the old `left` version had. */
 .project-card::after {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
+  left: 0;
   width: 60%;
   height: 100%;
   background: linear-gradient(
@@ -708,8 +715,9 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
     rgba(255, 255, 255, 0.03),
     transparent
   );
-  transform: skewX(-25deg);
+  transform: translateX(-167%) skewX(-25deg);
   animation: cardShine 4s ease-in-out infinite;
+  will-change: transform;
   pointer-events: none;
   z-index: 3;
 }
@@ -725,9 +733,9 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 @keyframes cardShine {
-  0%   { left: -100%; }
-  50%  { left: 150%; }
-  100% { left: 150%; }
+  0%   { transform: translateX(-167%) skewX(-25deg); }
+  50%  { transform: translateX(250%) skewX(-25deg); }
+  100% { transform: translateX(250%) skewX(-25deg); }
 }
 
 .project-card:focus-visible {
@@ -1082,7 +1090,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   font-size: 1.2rem;
   border-radius: 0.8rem;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
   display: block;
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -1138,7 +1146,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 .project-detail-panel.active {
   display: block;
-  animation: projectDetailReveal 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+  animation: projectDetailReveal 0.45s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 @keyframes projectDetailReveal {
@@ -1333,7 +1341,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1598,7 +1606,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   cursor: pointer;
   padding: 1rem 1.2rem;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
