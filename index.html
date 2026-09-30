@@ -132,6 +132,16 @@
 
   </main>
 
+  <!-- SCROLL-TO-PROJECT: floating button, fixed near the bottom of the
+       viewport — not part of the project panel's own flow. Shown/hidden
+       from JS whenever a project is open/closed (openProjectWindow /
+       closeProjectWindow). Jumps straight to the project content without
+       the visitor having to manually scroll past the carousel above it. -->
+  <button id="scroll-to-project-btn" class="scroll-to-project-btn" aria-label="Scroll to project details">
+    <span>View Project</span>
+    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+  </button>
+
   <!-- LIGHTBOX PARA IMÁGENES DEL CARRUSEL -->
   <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
     <div class="lightbox-overlay"></div>

@@ -590,6 +590,11 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 .projects-carousel.dragging .project-card { pointer-events: none; }
 
+/* While the clicked card is sliding to the front (see reorderCarouselWithFlip
+   in script.js), block hover/click on every card so nothing can trigger its
+   own hover transform mid-FLIP and fight the slide for control of `transform`. */
+.projects-carousel.reordering .project-card { pointer-events: none; }
+
 /* Edge fade only shows on the side that actually has more cards past
    it — .at-start / .at-end are toggled in JS based on scroll position. */
 .projects-carousel {
@@ -1339,9 +1344,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* Every project page ends in an explicit next step instead of just
-   trailing off after the contributions text — either loop back to the
-   carousel or jump straight into the next real project. */
+/* Every project page ends in an explicit way back instead of just
+   trailing off after the contributions text. */
 .project-detail-footer {
   width: 100%;
   max-width: 1200px;
@@ -1350,7 +1354,6 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  justify-content: space-between;
 }
 
 .project-nav-btn {
@@ -1381,19 +1384,6 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 .project-nav-btn:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.5);
   outline-offset: 2px;
-}
-
-.project-nav-next {
-  margin-left: auto;
-  background: rgba(139, 92, 246, 0.12);
-  border-color: rgba(139, 92, 246, 0.35);
-  color: #ffffff;
-}
-
-.project-nav-next:hover,
-.project-nav-next:focus-visible {
-  background: rgba(139, 92, 246, 0.22);
-  border-color: #8B5CF6;
 }
 
 .project-detail-description .project-long-description p { margin-bottom: 1rem; }
@@ -1749,6 +1739,72 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ============================================================
+   SCROLL-TO-PROJECT (floating button)
+   ============================================================ */
+.scroll-to-project-btn {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+
+  /* Hidden by default: invisible, not interactive, and — critically —
+     not reachable by Tab (visibility, not just opacity, is what drops it
+     out of the tab order). Same delayed-visibility technique already
+     used by .search-overlay elsewhere in this file. */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 16px) scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.3s;
+}
+
+.scroll-to-project-btn.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0s;
+}
+
+.scroll-to-project-btn i {
+  transition: transform 0.25s ease;
+}
+
+.scroll-to-project-btn:hover,
+.scroll-to-project-btn:focus-visible {
+  background: rgba(32, 32, 32, 0.95);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.scroll-to-project-btn:hover i,
+.scroll-to-project-btn:focus-visible i {
+  transform: translateY(3px);
+}
+
+.scroll-to-project-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 3px;
+}
+
+/* ============================================================
    PROJECT WINDOW - VIDEO CONTAINER
    ============================================================ */
 .project-video-container {
@@ -1921,7 +1977,6 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   .project-detail-description { padding: 0.75rem 1rem 3rem 1rem; }
   .project-detail-footer { padding: 0 1rem 3rem; }
   .project-nav-btn { flex: 1 1 auto; justify-content: center; font-size: 0.85rem; padding: 0.8rem 1rem; }
-  .project-nav-next { margin-left: 0; }
 
   /* LIGHTBOX NAV - MOBILE */
   .lightbox-nav {
