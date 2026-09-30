@@ -568,7 +568,7 @@ const sectionsContent = {
   'godot-projects': {
     title: 'Godot Projects',
     background: 'background-game',
-    engine: 'Godot',
+    engine: 'Sandbox',
     projects: [
       {
         id: 'godot-echo',
@@ -748,7 +748,7 @@ function buildSearchIndex() {
     { type: 'engine', name: 'Unreal Engine', section: 'game-development', keywords: ['unreal', 'engine', 'ue5', 'ue4'] },
     { type: 'engine', name: 'Unity', section: 'ux-ui', keywords: ['unity', 'c#', 'csharp'] },
     { type: 'engine', name: 'Web Games', section: 'web-projects', keywords: ['web', 'html', 'javascript', 'threejs'] },
-    { type: 'engine', name: 'Godot', section: 'godot-projects', keywords: ['godot', 'gdscript'] },
+    { type: 'engine', name: 'Sandbox', section: 'godot-projects', keywords: ['godot', 'gdscript', 'roblox', 'obby', 'sandbox'] },
     { type: 'engine', name: '3D Projects', section: 'others-3d', keywords: ['3d', 'blender', 'modeling', 'scan'] },
     { type: 'engine', name: 'Tools', section: 'tools-projects', keywords: ['tools', 'resources', 'utility', 'scripts'] },
   ];
