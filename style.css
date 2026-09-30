@@ -924,6 +924,12 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   width: 2.5rem;
   border-left: 1px dashed rgba(255, 255, 255, 0.15);
   border-right: 1px dashed rgba(255, 255, 255, 0.15);
+  /* Matches .project-card's own margin-left transition exactly (same
+     duration/easing) so when the last real card grows and pushes this
+     over, both move in sync — without this the divider was snapping to
+     its new position instantly while the card next to it eased into its
+     grown size, which is what read as "brusco". */
+  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .carousel-divider span {
