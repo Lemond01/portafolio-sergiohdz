@@ -466,12 +466,22 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ----- Home view: subtitle + engine filter chips ----- */
+.home-title {
+  font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+  flex-shrink: 0;
+}
+
 .home-subtitle {
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.45);
   letter-spacing: 0.5px;
   margin-bottom: 1.25rem;
   flex-shrink: 0;
+  max-width: 640px;
 }
 
 /* A single non-wrapping row, horizontally scrollable exactly like the
@@ -839,6 +849,68 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 .project-card.filtered-out { display: none; }
+
+/* Real, shippable work should read as the main event — "coming soon"
+   placeholders stay in the carousel (so the full scope of what's planned
+   is still visible) but pulled back so they don't compete for attention.
+   Full opacity on hover/focus so they're still easy to inspect on purpose. */
+.project-card.coming-soon {
+  opacity: 0.55;
+  filter: grayscale(0.35);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.project-card.coming-soon:hover,
+.project-card.coming-soon:focus-visible {
+  opacity: 0.85;
+  filter: grayscale(0.1);
+}
+
+.coming-soon-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Slim marker between the real projects and the "coming soon" tail of the
+   carousel — only rendered when there's at least one coming-soon project,
+   and hidden whenever a specific engine filter narrows the view (see
+   applyFilter). Vertical label instead of a horizontal banner so it stays
+   compact in a horizontally-scrolling carousel. */
+.carousel-divider {
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  border-left: 1px dashed rgba(255, 255, 255, 0.15);
+  border-right: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.carousel-divider span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+}
+
+.carousel-divider.filtered-out { display: none; }
 
 .project-card h3 {
   position: absolute;
@@ -1232,6 +1304,63 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   opacity: 0.7;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.9);
+}
+
+/* Every project page ends in an explicit next step instead of just
+   trailing off after the contributions text — either loop back to the
+   carousel or jump straight into the next real project. */
+.project-detail-footer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.project-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.4rem;
+  border-radius: 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.25s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.project-nav-btn:hover,
+.project-nav-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.project-nav-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.project-nav-next {
+  margin-left: auto;
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+}
+
+.project-nav-next:hover,
+.project-nav-next:focus-visible {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: #8B5CF6;
 }
 
 .project-detail-description .project-long-description p { margin-bottom: 1rem; }
@@ -1775,6 +1904,9 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   .project-info-grid { gap: 0.75rem; }
   .info-card { padding: 1rem; }
   .project-detail-description { padding: 0.75rem 1rem 3rem 1rem; }
+  .project-detail-footer { padding: 0 1rem 3rem; }
+  .project-nav-btn { flex: 1 1 auto; justify-content: center; font-size: 0.85rem; padding: 0.8rem 1rem; }
+  .project-nav-next { margin-left: 0; }
 
   /* LIGHTBOX NAV - MOBILE */
   .lightbox-nav {
@@ -1869,6 +2001,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   .project-info-grid { gap: 1rem; }
   .info-card { padding: 1.5rem; }
   .project-detail-description { padding: 1rem 2rem 3rem 2rem; }
+  .project-detail-footer { padding: 0 2rem 3rem; }
   .gallery-scroll-container { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
 
   /* LIGHTBOX NAV - TABLET */

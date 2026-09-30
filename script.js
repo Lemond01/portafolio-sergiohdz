@@ -568,7 +568,7 @@ const sectionsContent = {
   'godot-projects': {
     title: 'Godot Projects',
     background: 'background-game',
-    engine: 'Sandbox',
+    engine: 'Godot',
     projects: [
       {
         id: 'godot-echo',
@@ -795,15 +795,21 @@ function hideAllSections() {
 let activeFilter = 'all';
 
 function getAllProjectsFlat() {
-  const list = [];
+  // Finished work first, "coming soon" placeholders last — so the very
+  // first thing anyone sees is 100% real, shippable projects, not a wall
+  // that's 60% empty placeholder tiles. Order is stable within each group
+  // (still follows SECTION_ORDER), only the real/coming-soon split moves.
+  const real = [];
+  const comingSoon = [];
   SECTION_ORDER.forEach(sectionKey => {
     const section = sectionsContent[sectionKey];
     if (!section) return;
     section.projects.forEach(project => {
-      list.push({ sectionKey, sectionEngine: section.engine, project });
+      const entry = { sectionKey, sectionEngine: section.engine, project };
+      (project.comingSoon ? comingSoon : real).push(entry);
     });
   });
-  return list;
+  return { real, comingSoon, all: [...real, ...comingSoon] };
 }
 
 function projectCardHTML(entry, index) {
@@ -843,11 +849,23 @@ function renderHomeView() {
     .map(chip => `<button class="filter-chip ${chip.key === activeFilter ? 'active' : ''}" data-filter="${chip.key}">${chip.label}</button>`)
     .join('');
 
-  const projectsHTML = getAllProjectsFlat().map(projectCardHTML).join('');
+  const { real, comingSoon } = getAllProjectsFlat();
+  const realHTML = real.map((entry, i) => projectCardHTML(entry, i)).join('');
+  const comingSoonHTML = comingSoon
+    .map((entry, i) => projectCardHTML(entry, real.length + i))
+    .join('');
+  // Only shown when there's something to divide (i.e. at least one
+  // coming-soon entry) — a bare divider with nothing muted after it would
+  // just be visual noise.
+  const dividerHTML = comingSoon.length > 0
+    ? `<div class="carousel-divider" id="carousel-divider" aria-hidden="true"><span>More in<br>progress</span></div>`
+    : '';
+  const projectsHTML = realHTML + dividerHTML + comingSoonHTML;
 
   contentContainer.innerHTML = `
     <section class="content-section home-section">
-      <p class="home-subtitle">Explore my work — filter by engine, or browse everything</p>
+      <h1 class="home-title">Sergio Hernández</h1>
+      <p class="home-subtitle">Game developer — Unreal Engine, Godot &amp; web games, plus 3D art in Blender. Explore my work below, or filter by engine.</p>
       <div class="filter-chips">${chipsHTML}</div>
       <div class="projects-carousel" id="projects-carousel">${projectsHTML}</div>
       <p class="carousel-hint" id="carousel-hint"><i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i> Scroll, or click and drag, to see more projects</p>
@@ -1035,6 +1053,12 @@ function applyFilter(filterKey) {
 
     card.classList.toggle('filtered-out', !matches);
   });
+
+  // The "More in progress" divider only makes sense in the unfiltered,
+  // real-then-coming-soon layout of the "All Projects" view — hide it for
+  // any specific engine filter, where cards are just matches/non-matches.
+  const divider = document.getElementById('carousel-divider');
+  if (divider) divider.classList.toggle('filtered-out', filterKey !== 'all');
 
   const carousel = document.getElementById('projects-carousel');
   if (carousel) {
@@ -1248,6 +1272,15 @@ function openProjectWindow(title, image, description, galleryImages) {
   currentOpenProjectTitle = title;
   updateCarouselHint();
 
+  // "Next project" at the bottom of the page — cycles through the real
+  // (non-"coming soon") projects only, in the same order the carousel
+  // shows them, wrapping back to the first after the last.
+  const { real: realProjects } = getAllProjectsFlat();
+  const currentRealIndex = realProjects.findIndex(entry => entry.project.title === title);
+  const nextProjectEntry = realProjects.length > 1 && currentRealIndex !== -1
+    ? realProjects[(currentRealIndex + 1) % realProjects.length]
+    : null;
+
   // Highlight the matching carousel card as "selected" (slightly bigger,
   // no hover) so it's obvious which project the open panel belongs to.
   contentContainer.querySelectorAll('.project-card').forEach(c => {
@@ -1307,6 +1340,15 @@ function openProjectWindow(title, image, description, galleryImages) {
           ${contributionsHTML}
         </div>
       </div>
+      <div class="project-detail-footer">
+        <button class="project-nav-btn project-nav-back" id="project-nav-back">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to all projects
+        </button>
+        ${nextProjectEntry ? `
+        <button class="project-nav-btn project-nav-next" id="project-nav-next">
+          Next: ${nextProjectEntry.project.title} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </button>` : ''}
+      </div>
     </div>
   `;
 
@@ -1350,6 +1392,24 @@ function openProjectWindow(title, image, description, galleryImages) {
       openLightbox(img.src, galleryToUse, index);
     });
   });
+
+  const backBtn = document.getElementById('project-nav-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      closeProjectWindow();
+      document.getElementById('projects-carousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  const nextBtn = document.getElementById('project-nav-next');
+  if (nextBtn && nextProjectEntry) {
+    nextBtn.addEventListener('click', () => {
+      const { project: nextProject } = nextProjectEntry;
+      const nextCard = contentContainer.querySelector(`.project-card[data-project-title="${nextProject.title}"]`);
+      if (nextCard) scrollCarouselToCard(nextCard);
+      openProjectWindow(nextProject.title, nextProject.image, nextProject.description, nextProject.gallery || []);
+    });
+  }
 }
 
 function closeProjectWindow() {
