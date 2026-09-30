@@ -780,7 +780,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   transform: scale(1.1);
 }
 
-.project-card.selected + .project-card {
+.project-card.selected + .project-card,
+.project-card.selected + .carousel-divider {
   margin-left: calc(var(--project-card-size) * 0.12);
 }
 
@@ -863,15 +864,33 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
    is still visible) but pulled back so they don't compete for attention.
    Full opacity on hover/focus so they're still easy to inspect on purpose. */
 .project-card.coming-soon {
-  opacity: 0.55;
-  filter: grayscale(0.35);
-  transition: opacity 0.3s ease, filter 0.3s ease;
+  /* Dimmed via `filter` only (grayscale + darken) — deliberately NOT
+     `opacity`. The entrance animation (cardFadeUp, below) also animates
+     opacity, and CSS animations always win over normal rules for the
+     properties they touch: with opacity carrying the dimming, every
+     coming-soon card would fade all the way up to full brightness during
+     its entrance and only THEN snap down to dimmed once the animation
+     released — a visibly different, glitchy-looking entrance versus real
+     cards. `filter` isn't touched by the entrance animation at all, so it
+     can never fight it. Also restates the base .project-card transition
+     list in full (rather than adding transition: opacity/filter on its
+     own) because a `transition` declaration replaces the whole list from
+     a less-specific rule instead of merging with it — the shorter version
+     this replaced had silently dropped the transform/background/
+     border-color transitions, which is why hover/unhover here used to
+     look so much more abrupt than on real project cards. */
+  filter: grayscale(0.35) brightness(0.65);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease,
+              background 0.3s ease,
+              border-color 0.3s ease,
+              filter 0.3s ease;
 }
 
 .project-card.coming-soon:hover,
 .project-card.coming-soon:focus-visible {
-  opacity: 0.85;
-  filter: grayscale(0.1);
+  filter: grayscale(0.1) brightness(0.9);
 }
 
 .coming-soon-badge {
