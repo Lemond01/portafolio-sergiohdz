@@ -1322,14 +1322,14 @@ function renderProfileContent() {
       <p class="connect-cta">Connect with me!</p>
       <p class="connect-section-title">Links</p>
       <div class="connect-links">
-        <a href="https://www.linkedin.com/in/sergio-hernandez-dev" class="connect-button" target="_blank" rel="noopener">LinkedIn</a>
-        <a href="https://github.com/Lemond01" class="connect-button" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://www.artstation.com/lemondg" class="connect-button" target="_blank" rel="noopener">ArtStation</a>
+        <a href="/linkedin" class="connect-button" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="/github" class="connect-button" target="_blank" rel="noopener">GitHub</a>
+        <a href="/artstation" class="connect-button" target="_blank" rel="noopener">ArtStation</a>
       </div>
       <div class="social-icons">
-        <a href="https://line.me/ti/p/SsezhwgSOi" target="_blank" rel="noopener" aria-label="Line"><i class="fa-brands fa-line" aria-hidden="true"></i></a>
-        <a href="https://discordapp.com/users/500709438806818836" target="_blank" rel="noopener" aria-label="Discord"><i class="fa-brands fa-discord" aria-hidden="true"></i></a>
-        <a href="https://www.instagram.com/hdz_sergio2?igsh=MXIwMmVnd2lwZmM1eQ==" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-square-instagram" aria-hidden="true"></i></a>
+        <a href="/line" target="_blank" rel="noopener" aria-label="Line"><i class="fa-brands fa-line" aria-hidden="true"></i></a>
+        <a href="/discord" target="_blank" rel="noopener" aria-label="Discord"><i class="fa-brands fa-discord" aria-hidden="true"></i></a>
+        <a href="/instagram" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-square-instagram" aria-hidden="true"></i></a>
       </div>
     </div>
   `;

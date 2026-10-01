@@ -30,3 +30,23 @@ all rights reserved unless stated otherwise. A few project teasers credit
 third-party background music in their in-app description (e.g. "Made by
 RetoBGM Chan on Pixabay") — that audio keeps its own original license and
 is not covered by this file either.
+
+---
+
+Design Disclaimer
+
+The visual layout of this portfolio — a dark, card-based home screen with
+a horizontal project carousel — is independently inspired by the general
+look of the PlayStation 5 console's dashboard. It was chosen because it
+reads as clean, professional, and practical for presenting a list of
+projects, and because building it was itself a way to demonstrate front-end
+web development and UI/UX skills.
+
+This project is an independent work and is not affiliated with, endorsed
+by, sponsored by, or otherwise connected to Sony Interactive Entertainment
+LLC or any of its affiliates. "PlayStation" and "PS5" are trademarks of
+Sony Interactive Entertainment LLC and are used here only to describe the
+source of the visual inspiration. No official Sony/PlayStation logos,
+trademarks, fonts, UI assets, or other copyrighted material are used
+anywhere in this project — every asset under assets/ and every line of
+code is original work by the author.

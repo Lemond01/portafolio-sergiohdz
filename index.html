@@ -6,18 +6,20 @@
   <title>Portfolio | LemondG</title>
   <meta name="description" content="Sergio Hernández — game developer portfolio. Unreal Engine, Godot and web games, plus 3D art in Blender." />
   <meta name="theme-color" content="#000000" />
+  <link rel="canonical" href="https://sergiodev-portfolio.com/" />
 
   <!-- Open Graph / social preview (LinkedIn, Discord, etc.) -->
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sergiodev-portfolio.com/" />
   <meta property="og:title" content="Portfolio | LemondG" />
   <meta property="og:description" content="Sergio Hernández — game developer portfolio. Unreal Engine, Godot and web games, plus 3D art in Blender." />
-  <meta property="og:image" content="assets/shared/social-preview.jpg" />
+  <meta property="og:image" content="https://sergiodev-portfolio.com/assets/shared/social-preview.jpg" />
 
   <!-- Twitter card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Portfolio | LemondG" />
   <meta name="twitter:description" content="Sergio Hernández — game developer portfolio. Unreal Engine, Godot and web games, plus 3D art in Blender." />
-  <meta name="twitter:image" content="assets/shared/social-preview.jpg" />
+  <meta name="twitter:image" content="https://sergiodev-portfolio.com/assets/shared/social-preview.jpg" />
 
   <!-- Favicons -->
   <link rel="icon" type="image/png" sizes="32x32" href="assets/shared/favicon-32.png" />
@@ -131,6 +133,11 @@
     <div id="profile-container" class="profile-container hidden"></div>
 
   </main>
+
+  <!-- SITE FOOTER NOTE: fixed (not part of document flow, so it can't
+       affect scroll height/layout anywhere) and shared across every view
+       instead of being duplicated into renderHomeView/renderProfileContent. -->
+  <p class="site-footer-note">&copy; 2026 Sergio Hernández</p>
 
   <!-- SCROLL-TO-PROJECT: floating button, fixed near the bottom of the
        viewport — not part of the project panel's own flow. Shown/hidden

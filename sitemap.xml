@@ -5,13 +5,12 @@
   A sitemap adds little for a one-page site, but it's wired up correctly
   for when that changes (e.g. if projects ever get their own URLs).
 
-  Replace https://example.com/ below with your real deployed domain, and
-  update <lastmod> when you make a meaningful content change.
+  Update <lastmod> when you make a meaningful content change.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://example.com/</loc>
-    <lastmod>2026-09-29</lastmod>
+    <loc>https://sergiodev-portfolio.com/</loc>
+    <lastmod>2026-09-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>

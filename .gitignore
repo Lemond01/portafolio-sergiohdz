@@ -9,3 +9,13 @@ _originals_backup/
 # OS / editor cruft
 .DS_Store
 Thumbs.db
+
+# Netlify CLI's local site link/auth state (created if `netlify dev` or
+# `netlify link` is ever run in this folder) — machine-specific, not part
+# of the project.
+.netlify/
+
+# Env files — none exist yet, but ignored up front so one never gets
+# committed by accident later.
+.env
+.env.local

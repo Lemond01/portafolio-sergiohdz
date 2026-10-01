@@ -1739,6 +1739,21 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ============================================================
+   SITE FOOTER NOTE
+   ============================================================ */
+.site-footer-note {
+  position: fixed;
+  right: calc(0.75rem + env(safe-area-inset-right, 0px));
+  bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  margin: 0;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ============================================================
    SCROLL-TO-PROJECT (floating button)
    ============================================================ */
 .scroll-to-project-btn {

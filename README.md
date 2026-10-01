@@ -1,73 +1,25 @@
 # Portfolio | LemondG
 
-Personal portfolio for Sergio Hernández — a PS5-dashboard-styled site built with
-plain HTML, CSS and JavaScript (no build step, no framework, no dependencies).
+🎮 **[sergiodev-portfolio.com](https://sergiodev-portfolio.com/)**
 
-## Running locally
+Hey, I'm Sergio — a game developer working across Unreal Engine, Godot, and web games, with some 3D art in Blender on the side. This is my portfolio, and I'd genuinely love for you to take a look around.
 
-This is a static site — any local web server works. The project is set up for
-the VS Code **Live Server** extension (`.vscode/settings.json`, port 5501):
-right-click [index.html](index.html) → "Open with Live Server".
+## Why it looks like this
 
-Without the extension, any static server works the same way, e.g.:
+I wanted something that felt less like a plain list of projects and more like an actual experience. The whole layout — dark theme, a horizontal carousel of project cards, a details panel that slides in with its own background art — is inspired by the home-screen dashboard of a game console. It felt clean, professional, and like the right fit for showcasing game projects specifically. Building it from scratch, with no frameworks, was also my way of putting my front-end skills on display alongside the game dev work itself.
 
-```bash
-python -m http.server 5501
-```
+## What's inside
 
-Then open `http://localhost:5501`.
+- **LAST PATH** — a third-person survival horror game built in Unreal Engine 5. You play a journalist following a story into an abandoned network of catacombs: explore, avoid what hunts in the dark, and find a way out.
+- **RACING CIRCUIT** — a racing game built in Unreal Engine 5 for the Unreal Championships Game Jam, set on a circuit inspired by traditional Chinese architecture.
+- **LEXICO** — a word-guessing game in the spirit of Wordle, with a Daily Challenge and an unlimited Practice mode.
+- **EMBER** — a browser-based arcade game in the spirit of Flappy Bird, with a handcrafted origami look and biomes that shift as you fly further.
+- **ECHO** — a modern take on Pong, built in Godot, playable against an AI or a friend locally, with rallies that speed up the longer they go.
+- **FANTASY WARRIOR** — a stylized 3D character, modeled in Blender from 2D concept art.
+- **BENETTON SISTERLAND PERFUME** — a 3D product recreation of a real perfume bottle, modeled in Blender from photo references.
 
-## Project structure
+More projects are in progress and will show up here as they're finished.
 
-```
-index.html          Page shell only — every view is rendered by script.js
-script.js            All app logic + the project data (sectionsContent)
-style.css            All styling, incl. responsive breakpoints
+## License
 
-assets/
-  projects/<id>/      One folder per real (non-"coming soon") project
-    hero.webp           Card thumbnail + full-page background art
-    teaser.mp4          Click-to-play teaser video (if the project has one)
-    turntable.mp4        Autoplaying looping clip (Blender turntables, etc.
-                          — used instead of teaser.mp4 for projects with no
-                          gameplay video)
-    gallery/            The 4 images shown in the project's detail gallery
-  shared/
-    logo.jpg            Site logo / avatar (header, loading screen, profile)
-    coming-soon.webp     Placeholder art for projects not published yet
-    favicon-32.png, apple-touch-icon.png, social-preview.jpg
-                         Browser tab icon and the image used when the site
-                         link is shared (LinkedIn, Discord, etc.)
-  audio/
-    ambient-music.mp3    Background music (fades in on first interaction)
-
-LICENSE                Code license (MIT) — does NOT cover assets/, see LICENSE
-robots.txt / sitemap.xml   Minimal SEO files; sitemap.xml still has a
-                            placeholder domain — update it once this is deployed
-```
-
-Each project's `id` in `sectionsContent` (inside [script.js](script.js))
-matches its folder name under `assets/projects/` — e.g. the project with
-`id: 'last-path'` owns `assets/projects/last-path/`. Renaming a project's
-folder means also updating its `id`/paths in `sectionsContent`, and vice
-versa.
-
-## Adding a new project
-
-1. Create `assets/projects/<new-id>/` with `hero.webp`, a `gallery/` folder
-   (4 images), and either `teaser.mp4` or a `media: { type: 'video-loop' }`
-   clip.
-2. Add an entry to the relevant section in `sectionsContent` in
-   [script.js](script.js), pointing at those paths.
-3. Set `comingSoon: false`.
-
-## Notes
-
-- Videos and heavy images are already compressed for the web (H.264 teasers/
-  turntables, cwebp-optimized images). Keep new assets in a similar size
-  range: teaser videos land around 5-30MB (H.264, CRF ~26-29), photos/
-  renders around 20-450KB (cwebp, quality ~82-85).
-- [LICENSE](LICENSE) covers the code (MIT) only — project screenshots,
-  videos, 3D renders and the logo under `assets/` are not open-licensed.
-- Before deploying, update the placeholder domain in [sitemap.xml](sitemap.xml)
-  and [robots.txt](robots.txt) to the real one.
+The code (HTML/CSS/JS) is MIT-licensed — see [LICENSE](LICENSE). Project screenshots, videos, 3D renders, and the logo under `assets/` are my own work and stay all-rights-reserved unless noted otherwise.

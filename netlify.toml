@@ -1,0 +1,60 @@
+# Static site, no build step — just serve the repo root as-is.
+[build]
+  publish = "."
+
+# Vanity redirects for the "Connect with me" links, so the browser's own
+# hover/status-bar link preview shows a clean same-origin path instead of
+# the raw external URL (Discord's numeric user ID in particular). 302 (not
+# 301) so browsers don't cache these aggressively if a destination ever
+# changes. script.js's renderProfileContent() links to these paths, not
+# the real URLs directly.
+[[redirects]]
+  from = "/linkedin"
+  to = "https://www.linkedin.com/in/sergio-hernandez-dev"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/github"
+  to = "https://github.com/Lemond01"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/artstation"
+  to = "https://www.artstation.com/lemondg"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/line"
+  to = "https://line.me/ti/p/SsezhwgSOi"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/discord"
+  to = "https://discordapp.com/users/500709438806818836"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/instagram"
+  to = "https://www.instagram.com/hdz_sergi0?stkn=MXIwMmVnd2lwZmM1eQ=="
+  status = 302
+  force = true
+
+# Baseline security headers. No Content-Security-Policy here on purpose:
+# the page relies on an inline onload handler (index.html's Font Awesome
+# preload) and script.js sets inline styles on elements constantly
+# (backgroundImage, transform, opacity, transition for the animations),
+# so a CSP tight enough to matter would need 'unsafe-inline' for both
+# script-src and style-src anyway — at which point it protects very
+# little. Revisit if those are ever cleaned up.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
