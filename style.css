@@ -10,17 +10,12 @@
 }
 
 html {
-  /* The native scrollbar is hidden entirely (see below) in favor of a custom
-     overlay (#page-scrollbar) drawn above the content, so scrolling never
-     reserves layout space or shifts anything. */
+  /* Native scrollbar hidden in favor of the custom #page-scrollbar overlay. */
   scrollbar-width: none;
 }
 html::-webkit-scrollbar { display: none; }
 
-/* Respect the OS-level "reduce motion" preference: freeze/shorten every
-   animation and transition instead of letting pulses, crossfades and
-   reveal animations run indefinitely. Standard broad-coverage pattern —
-   affects timing only, never layout or final state. */
+/* Respect the OS-level "reduce motion" preference. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -46,12 +41,7 @@ body {
 }
 body::-webkit-scrollbar { display: none; }
 
-/* ------------------------------------------------------------
-   Custom page scrollbar: an overlay above the content (not part of
-   normal layout flow), so it can appear/disappear without ever shifting
-   or resizing anything. JS toggles .visible and sets the thumb's size/
-   position via inline styles based on real scroll progress.
-   ------------------------------------------------------------ */
+/* Custom page scrollbar overlay — JS toggles .visible and sets the thumb's size/position. */
 .page-scrollbar {
   position: fixed;
   top: 0;
@@ -99,11 +89,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   overflow: visible;
 }
 
-/* ------------------------------------------------------------
-   Page background: shows the selected project's key art behind
-   everything (PS Store style). Sits before .main-container in the
-   DOM so it paints underneath it without needing z-index.
-   ------------------------------------------------------------ */
+/* Page background: project key art, sits before .main-container to paint underneath it. */
 .page-background {
   position: fixed;
   inset: 0;
@@ -484,12 +470,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   max-width: 640px;
 }
 
-/* A single non-wrapping row, horizontally scrollable exactly like the
-   project carousel below it — on narrow screens where all the chips don't
-   fit, they scroll instead of wrapping into a cramped multi-row block.
-   On wide screens where everything already fits in one row, the scroll
-   area has nothing to scroll and the edge fade below resolves to none,
-   so this has no visual effect there. */
+/* Single non-wrapping row, horizontally scrollable like the carousel below. */
 .filter-chips {
   display: flex;
   flex-wrap: nowrap;
@@ -560,11 +541,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 /* ============================================================
    PROJECT CARDS CAROUSEL
-   - Card SIZE (width + height, since cards are square): change
-     --project-card-size below.
-   - Card SHAPE (square vs. rectangular): change the aspect-ratio
-     on .card-image-wrapper further down.
-   - Edge fade: the mask-image gradient on .projects-carousel.
+   Size: --project-card-size. Shape: .card-image-wrapper's aspect-ratio.
    ============================================================ */
 .projects-carousel {
   --project-card-size: 260px;
@@ -642,29 +619,15 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   opacity: 0.8;
 }
 
-/* Block hover/click on a card until ITS OWN entrance animation has
-   actually finished (JS adds .entrance-done on 'animationend') — a stray
-   hover mid-animation would otherwise fight the incoming transform and
-   make the card glitch. This is per-card (not a single timer for the
-   whole carousel), so early cards in the stagger become clickable as
-   soon as they're done, instead of everyone waiting on the slowest one. */
+/* Blocked until each card's own entrance animation finishes (JS adds
+   .entrance-done on 'animationend'), so a stray hover can't fight the incoming transform. */
 .project-card:not(.entrance-done) {
   pointer-events: none;
 }
 
-/* Once the entrance animation is done, drop it entirely and pin the
-   resting values it would otherwise leave behind (the base rule's
-   opacity: 0 / translateY(20px) is the animation's *starting* point —
-   without restating the end state here, releasing the animation would
-   snap the card right back to invisible/offset). This matters because
-   animation-fill-mode: forwards otherwise keeps holding `transform` at a
-   higher cascade priority than any normal rule forever after — which is
-   what made .selected's transform snap instantly instead of
-   transitioning (needed !important to win, but a value that wins by
-   !important doesn't transition smoothly from an animation-held value).
-   Freeing transform here lets it transition normally like any other
-   property. (.selected's own transform rule is declared further below,
-   so it wins the tie via source order when a card is both.) */
+/* Restates the animation's end state and drops it, freeing `transform` to
+   transition normally — animation-fill-mode: forwards otherwise holds it at
+   a higher cascade priority than any normal rule, including .selected's. */
 .project-card.entrance-done {
   animation: none;
   opacity: 1;
@@ -697,13 +660,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   width: var(--project-card-size);
 }
 
-/* Mirror-shine sweep. Positioned with a static `left`, then moved entirely
-   via `transform: translateX()` in the animation below, so the infinite
-   per-card animation stays GPU-compositable instead of running a layout-
-   eligible property on every card at once, forever. The translateX
-   percentages are relative to *this element's own* 60%-wide box, so
-   -167%/250% give the same -100%/150%-of-parent travel distance a plain
-   `left` animation would. */
+/* Mirror-shine sweep, animated via transform (GPU-compositable) instead of
+   `left`. Percentages are relative to this element's own 60%-wide box. */
 .project-card::after {
   content: '';
   position: absolute;
@@ -755,13 +713,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 
-/* The card whose project is currently open — a little bigger as a visual
-   anchor, no hover reaction (it's already "selected"). Grows via
-   transform: scale() anchored top-left (GPU-accelerated, avoids a layout
-   recalc every frame the way animating width would). The card right after
-   it gets a matching margin-left so it's still pushed over, keeping the
-   normal gap instead of being covered by the overlap. Both transition on
-   the same duration/easing so the grow and the push move in sync. */
+/* The open project's card — grows via transform: scale() (GPU-accelerated).
+   The card after it gets a matching margin-left to keep the normal gap. */
 .project-card.selected {
   transform: scale(1.12);
   z-index: 2;
@@ -788,11 +741,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   margin-left: calc(var(--project-card-size) * 0.12);
 }
 
-/* Animated LED gradient border for the selected card. Same technique as
-   the original engine-card version (mask-composite ring + traveling
-   gradient), but kept flush with inset:0 instead of expanding -8px past
-   the card's edges — .project-card has overflow:hidden (needed to clip
-   the image/badges), which would otherwise cut the ring off. */
+/* Animated LED gradient border, kept flush with inset:0 since .project-card's
+   overflow:hidden would clip a ring that expanded past the edges. */
 .project-card.selected::before {
   content: '';
   position: absolute;
@@ -862,12 +812,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 .project-card.filtered-out { display: none; }
 
-/* Decorative bookend cards (welcome/grid logos) at the very start and end
-   of the carousel — same size/entrance as a real project card (still
-   .project-card underneath), but no title, no engine tag, and no project
-   behind them to open, so they're excluded from the click/FLIP-reorder
-   logic in script.js and marked aria-hidden instead of being a keyboard-
-   focusable dead end. */
+/* Decorative bookend cards (welcome/grid logos) — no project behind them,
+   excluded from click/FLIP-reorder logic in script.js, marked aria-hidden. */
 .bookend-card {
   cursor: default;
   align-items: center;
@@ -876,10 +822,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   background: rgba(50, 50, 50, 0.5);
 }
 
-/* The mirror-shine sweep (.project-card::after) reads as a subtle
-   highlight traveling over a busy photo, but on these flat, uniform-gray
-   cards the same traveling band just looks like one side randomly
-   darkening. Dropped entirely here. */
+/* The mirror-shine sweep reads badly on these flat, uniform-gray cards. */
 .bookend-card::after {
   content: none;
 }
@@ -895,25 +838,11 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   opacity: 0.85;
 }
 
-/* Real, shippable work should read as the main event — "coming soon"
-   placeholders stay in the carousel (so the full scope of what's planned
-   is still visible) but pulled back so they don't compete for attention.
-   Full opacity on hover/focus so they're still easy to inspect on purpose. */
+/* Coming-soon cards stay in the carousel but pulled back from attention. */
 .project-card.coming-soon {
-  /* Dimmed via `filter` only (grayscale + darken) — deliberately NOT
-     `opacity`. The entrance animation (cardFadeUp, below) also animates
-     opacity, and CSS animations always win over normal rules for the
-     properties they touch: with opacity carrying the dimming, every
-     coming-soon card would fade all the way up to full brightness during
-     its entrance and only THEN snap down to dimmed once the animation
-     released, a visibly different entrance than real cards get. `filter`
-     isn't touched by the entrance animation at all, so it can never fight
-     it. Also restates the base .project-card transition list in full
-     (rather than adding transition: opacity/filter on its own) because a
-     `transition` declaration replaces the whole list from a less-specific
-     rule instead of merging with it — a shorter list here would silently
-     drop the transform/background/border-color transitions, making hover/
-     unhover noticeably more abrupt than on real project cards. */
+  /* Dimmed via `filter`, not `opacity` — the entrance animation also
+     animates opacity and would fight it. Restates the full transition list
+     since `transition` replaces (not merges with) the base rule's list. */
   filter: grayscale(0.35) brightness(0.65);
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
               margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
@@ -945,11 +874,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* Slim marker between the real projects and the "coming soon" tail of the
-   carousel — only rendered when there's at least one coming-soon project,
-   and hidden whenever a specific engine filter narrows the view (see
-   applyFilter). Vertical label instead of a horizontal banner so it stays
-   compact in a horizontally-scrolling carousel. */
+/* Marker between real projects and the coming-soon tail; vertical label to stay compact. */
 .carousel-divider {
   flex-shrink: 0;
   align-self: stretch;
@@ -959,10 +884,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   width: 2.5rem;
   border-left: 1px dashed rgba(255, 255, 255, 0.15);
   border-right: 1px dashed rgba(255, 255, 255, 0.15);
-  /* Matches .project-card's own margin-left transition exactly (same
-     duration/easing) so when the last real card grows and pushes this
-     over, both move in sync instead of the divider snapping to its new
-     position instantly while the card eases into its grown size. */
+  /* Matches .project-card's margin-left transition so both move in sync. */
   transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1225,7 +1147,6 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 .project-info-section,
 .project-detail-description {
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -1242,7 +1163,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 .project-hero-title h1 {
-  font-size: clamp(1.5rem, 2.6vw, 2.75rem);
+  font-size: clamp(1.5rem, 2vw, 3.5rem);
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 1px;
@@ -1310,7 +1231,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 .info-card p {
-  font-size: 0.95rem;
+  font-size: clamp(0.95rem, 0.6vw, 1.2rem);
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 0.75rem;
@@ -1321,7 +1242,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 .contributions-list { list-style: none; padding: 0; margin: 0; }
 
 .contributions-list li {
-  font-size: 0.95rem;
+  font-size: clamp(0.95rem, 0.6vw, 1.2rem);
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.8);
   padding: 0.35rem 0 0.35rem 1.25rem;
@@ -1360,14 +1281,14 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 .project-detail-description { padding: 1.5rem 2rem 4rem; }
 
 .project-detail-description h2 {
-  font-size: 2rem;
+  font-size: clamp(1.5rem, 1.2vw, 2.5rem);
   font-weight: 700;
   margin-bottom: 1rem;
   color: #ffffff;
 }
 
 .project-detail-description .project-long-description {
-  font-size: 1rem;
+  font-size: clamp(1rem, 0.65vw, 1.25rem);
   opacity: 0.7;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.9);
@@ -1377,7 +1298,6 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
    trailing off after the contributions text. */
 .project-detail-footer {
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem 4rem;
   display: flex;
@@ -1498,10 +1418,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 /* Pulse rings, hidden initially */
 .pulse-ring {
   position: absolute;
-  /* Fixed at the *final* (fully expanded) size — the "growing" look now
-     comes entirely from `transform: scale()` in @keyframes pulse-wave
-     below (0.3 -> 1.1), not from animating width/height, so the ring
-     never triggers layout during the animation. */
+  /* Fixed at final size — growth comes from transform: scale() in @keyframes pulse-wave. */
   width: 400px;
   height: 400px;
   border-radius: 50%;
@@ -1691,9 +1608,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ============================================================
-   COMING SOON MESSAGE
-   Fixed viewport overlay, matching the lightbox/search-overlay pattern
-   used elsewhere.
+   COMING SOON MESSAGE — fixed viewport overlay
    ============================================================ */
 .coming-soon-message {
   position: fixed;
@@ -1766,8 +1681,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ============================================================
-   WELCOME NOTIFICATION (one-time toast shown right after the loading
-   screen finishes — see showWelcomeNotification in script.js)
+   WELCOME NOTIFICATION — one-time toast after loading (see script.js)
    ============================================================ */
 .welcome-notification {
   position: fixed;
@@ -1863,10 +1777,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   outline: none;
   -webkit-tap-highlight-color: transparent;
 
-  /* Hidden by default: invisible, not interactive, and — critically —
-     not reachable by Tab (visibility, not just opacity, is what drops it
-     out of the tab order). Same delayed-visibility technique already
-     used by .search-overlay elsewhere in this file. */
+  /* visibility (not just opacity) also drops it out of the tab order. */
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -1916,10 +1827,12 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 .project-video-container video,
 .project-video-container .project-media-gif {
-  width: 100%;
-  height: auto;
   display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
   max-height: 70vh;
+  margin: 0 auto;
   object-fit: contain;
 }
 
@@ -1952,11 +1865,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   100% { transform: scale(1); }
 }
 
-/* "Sonar ping" ring: a growing-and-fading look achieved purely with
-   transform (scale) + opacity, fully GPU-compositable instead of forcing
-   a layout+paint on every frame. .pulse-ring is already sized to its
-   final (100%) dimensions, so 0.3 here is the small starting size as a
-   fraction of that final one (e.g. 120px start / 400px final). */
+/* "Sonar ping" ring, GPU-compositable via transform+opacity. 0.3 is the
+   starting size as a fraction of .pulse-ring's final dimensions. */
 @keyframes pulse-wave {
   0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(0.3); }
   20%  { opacity: 0.7; }
@@ -1970,7 +1880,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
    ============================================================ */
 
 /* ------------------------------------------------------------
-   Mobile (< 481px) - SCROLL ACTIVADO
+   Mobile (< 481px)
    ------------------------------------------------------------ */
 @media (max-width: 480px) {
   body {
@@ -2097,7 +2007,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ------------------------------------------------------------
-   Tablets (481px - 1024px) - SCROLL ACTIVADO
+   Tablets (481px - 1024px)
    ------------------------------------------------------------ */
 @media (min-width: 481px) and (max-width: 1024px) {
   body {
@@ -2193,8 +2103,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ------------------------------------------------------------
-   Laptops (1025px - 1600px) - SCROLL ACTIVADO (native scrollbar at the
-   window's edge instead of one nested inside .content-container)
+   Laptops (1025px - 1600px) - native scrollbar at the window edge
    ------------------------------------------------------------ */
 @media (min-width: 1025px) and (max-width: 1600px) {
   body {
@@ -2232,8 +2141,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ------------------------------------------------------------
-   Desktop Large (> 1600px) - SCROLL ACTIVADO (native scrollbar at the
-   window's edge instead of one nested inside .content-container)
+   Desktop Large (> 1600px) - native scrollbar at the window edge
    ------------------------------------------------------------ */
 @media (min-width: 1601px) {
   body {
