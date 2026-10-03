@@ -1905,6 +1905,9 @@ let searchTriggerEl = null;
 function openSearch() {
   searchTriggerEl = document.activeElement;
   searchOverlay.classList.add('active');
+  // Locks the page itself — .search-results already scrolls on its own
+  // (max-height + overflow-y: auto) when there are more results than fit.
+  body.style.overflow = 'hidden';
   searchInput.value = '';
   searchInput.focus();
   resetSearchToDefault();
@@ -1913,6 +1916,7 @@ function openSearch() {
 
 function closeSearch() {
   searchOverlay.classList.remove('active');
+  body.style.overflow = '';
   searchInput.value = '';
   if (searchTriggerEl) {
     searchTriggerEl.focus();
