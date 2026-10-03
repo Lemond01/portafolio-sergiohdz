@@ -475,6 +475,9 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   display: flex;
   flex-wrap: nowrap;
   gap: 0.7rem;
+  /* Matches .project-hero-title/.all-projects-grid's own horizontal padding
+     (see their mobile override too) so the chips line up with them. */
+  padding: 0 2rem;
   margin-bottom: 1.5rem;
   flex-shrink: 0;
   overflow-x: auto;
@@ -492,17 +495,20 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 .filter-chips.dragging .filter-chip { pointer-events: none; }
 
+/* 56px = the 2rem (32px) padding plus the original 24px fade distance, so
+   the fade still lands on actual chip content instead of finishing inside
+   the padding and never becoming visible. */
 .filter-chips {
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
 }
 .filter-chips.at-start {
-  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
-  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 56px), transparent 100%);
 }
 .filter-chips.at-end {
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 100%);
-  mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 56px, #000 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 56px, #000 100%);
 }
 .filter-chips.at-start.at-end {
   -webkit-mask-image: none;
@@ -684,13 +690,12 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   z-index: 3;
 }
 
-.project-card:nth-child(2n)::after { animation-delay: 1.3s; }
-.project-card:nth-child(3n)::after { animation-delay: 2.6s; }
-
 /* The selected card already has the LED border as its highlight — skip
-   the shine there so the two effects don't compete. */
+   the shine there so the two effects don't compete. Only hidden via
+   opacity, not `animation: none` — the animation keeps running underneath
+   so it's still in sync with every other card once deselected again,
+   instead of restarting from 0% and drifting out of phase with them. */
 .project-card.selected::after {
-  animation: none;
   opacity: 0;
 }
 
@@ -736,8 +741,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   transform: scale(1.1);
 }
 
-.project-card.selected + .project-card,
-.project-card.selected + .carousel-divider {
+.project-card.selected + .project-card {
   margin-left: calc(var(--project-card-size) * 0.12);
 }
 
@@ -812,10 +816,10 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 .project-card.filtered-out { display: none; }
 
-/* Decorative bookend cards (welcome/grid logos) — no project behind them,
-   excluded from click/FLIP-reorder logic in script.js, marked aria-hidden. */
+/* Both bookends are interactive (see script.js): #welcome-bookend-card shows
+   an info toast, #grid-bookend-card opens the all-projects grid view. */
 .bookend-card {
-  cursor: default;
+  cursor: pointer;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1 / 1;
@@ -835,7 +839,6 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   width: 42%;
   height: 42%;
   object-fit: contain;
-  opacity: 0.85;
 }
 
 /* Coming-soon cards stay in the carousel but pulled back from attention. */
@@ -873,33 +876,6 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
-
-/* Marker between real projects and the coming-soon tail; vertical label to stay compact. */
-.carousel-divider {
-  flex-shrink: 0;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  border-left: 1px dashed rgba(255, 255, 255, 0.15);
-  border-right: 1px dashed rgba(255, 255, 255, 0.15);
-  /* Matches .project-card's margin-left transition so both move in sync. */
-  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.carousel-divider span {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.35);
-  white-space: nowrap;
-}
-
-.carousel-divider.filtered-out { display: none; }
 
 .project-card h3 {
   position: absolute;
@@ -1135,7 +1111,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.project-detail {
+.project-detail,
+.all-projects-view {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1145,7 +1122,9 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 .project-hero-title,
 .project-gallery-carousel,
 .project-info-section,
-.project-detail-description {
+.project-detail-description,
+.filter-chips,
+.all-projects-grid {
   width: 100%;
   margin: 0 auto;
 }
@@ -1293,6 +1272,34 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.9);
 }
+
+/* All-projects grid (opened from the grid bookend card) — same .project-card
+   styling as the carousel, just wrapped into a grid instead of a scroll row. */
+.all-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+  /* .filter-chips' own margin-bottom gets reset by the shared `margin: 0
+     auto` rule above, so the space between them has to come from here. */
+  margin-top: clamp(1.25rem, 2vw, 2.5rem);
+  /* Same breathing room a project's own content gets at the bottom (see
+     .project-detail-description/.project-detail-footer), so the last row
+     never ends up flush against the viewport edge. */
+  padding: 0 2rem clamp(3rem, 6vh, 6rem);
+}
+
+.all-projects-grid .project-card { width: 100%; }
+
+/* Shine sweep reads as a nice per-card highlight in the scrolling carousel,
+   but with this many cards wrapping onto a static grid it's too much
+   motion at once — dropped here, same reasoning as the bookend cards. */
+.all-projects-grid .project-card::after { content: none; }
+
+.grid-back-to-top { justify-content: center; }
+/* .project-detail-footer's own `display: flex` has the same specificity as
+   the browser's default [hidden] rule, so it silently wins and keeps this
+   visible regardless of the hidden property — this restores it explicitly. */
+.grid-back-to-top[hidden] { display: none; }
 
 /* Every project page ends in an explicit way back instead of just
    trailing off after the contributions text. */
@@ -1977,6 +1984,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   .project-hero-title { padding: 0.75rem 1rem 0.25rem; }
   .project-gallery-carousel { padding: 0 1rem 0.75rem 1rem; }
   .gallery-scroll-container { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .filter-chips { padding: 0 1rem; }
+  .all-projects-grid { padding: 0 1rem clamp(3rem, 6vh, 6rem); }
   .project-info-section { padding: 0 1rem 1rem 1rem; }
   .project-info-grid { gap: 0.75rem; }
   .info-card { padding: 1rem; }

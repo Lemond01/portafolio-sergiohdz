@@ -39,6 +39,10 @@ let musicFadeOutInterval = null;
 let projectTransitionLock = false;
 let backgroundSwapTimeout = null;
 let currentOpenProjectTitle = null;
+// Sentinel "title" for the all-projects grid view, so it can reuse the same
+// open/close/selected machinery as a real project without matching one.
+const GRID_VIEW_TITLE = '__grid-view__';
+let gridViewActiveFilter = 'all';
 
 // Front-to-back order of real projects once one's been opened; null = default SECTION_ORDER. Session-only.
 let customRealOrderTitles = null;
@@ -817,11 +821,9 @@ function hideAllSections() {
 }
 
 /* ============================================================
-   HOME VIEW - ALL PROJECTS IN ONE FLAT, FILTERABLE GRID
-   (no more Games/Others hub -> engine page -> project page chain;
-   every real project is one click away, engines are just filters)
+   HOME VIEW - the carousel shows real projects only; filters and
+   coming-soon projects both live in the grid view (see openGridView).
    ============================================================ */
-let activeFilter = 'all';
 // Carousel's momentum-scroll token (see initDragToScroll/createMomentumWheel).
 // Bumped by reorderCarouselWithFlip to cancel an in-flight glide before a reorder.
 let carouselScrollToken = null;
@@ -891,34 +893,19 @@ function renderHomeView() {
   contentContainer.removeAttribute('style');
   contentContainer.style.display = 'flex';
 
-  const chips = [{ key: 'all', label: 'All Projects' }]
-    .concat(SECTION_ORDER.map(key => ({ key, label: sectionsContent[key].engine })));
-
-  const chipsHTML = chips
-    .map(chip => `<button class="filter-chip ${chip.key === activeFilter ? 'active' : ''}" data-filter="${chip.key}">${chip.label}</button>`)
-    .join('');
-
-  const { comingSoon } = getAllProjectsFlat();
   const real = getOrderedReal();
   const realHTML = real.map((entry, i) => projectCardHTML(entry, i)).join('');
-  const comingSoonHTML = comingSoon
-    .map((entry, i) => projectCardHTML(entry, real.length + i))
-    .join('');
-  // Only shown when there's at least one coming-soon entry to separate from.
-  const dividerHTML = comingSoon.length > 0
-    ? `<div class="carousel-divider" id="carousel-divider" aria-hidden="true"><span>More in<br>progress</span></div>`
-    : '';
-  // Decorative, non-interactive bookends — excluded via .bookend-card checks
-  // in bindHomeViewEvents, reorderCarouselWithFlip, and applyFilter.
-  const bookendStartHTML = `<div class="project-card bookend-card" aria-hidden="true"><img src="assets/shared/welcome-logo.png" alt="" class="bookend-card-icon"></div>`;
-  const bookendEndHTML = `<div class="project-card bookend-card" aria-hidden="true"><img src="assets/shared/grid-logo.png" alt="" class="bookend-card-icon"></div>`;
-  const projectsHTML = bookendStartHTML + realHTML + bookendEndHTML + dividerHTML + comingSoonHTML;
+  // Both bookends are interactive — excluded from the normal project click
+  // loop in bindHomeViewEvents (and from reorderCarouselWithFlip/FLIP
+  // reordering, since neither is a real project), with their own handlers.
+  const bookendStartHTML = `<div class="project-card bookend-card" id="welcome-bookend-card" role="button" tabindex="0" aria-label="About this portfolio"><img src="assets/shared/welcome-logo.png" alt="" class="bookend-card-icon"></div>`;
+  const bookendEndHTML = `<div class="project-card bookend-card" id="grid-bookend-card" data-project-title="${GRID_VIEW_TITLE}" role="button" tabindex="0" aria-label="View all projects"><img src="assets/shared/grid-logo.png" alt="" class="bookend-card-icon"></div>`;
+  const projectsHTML = bookendStartHTML + realHTML + bookendEndHTML;
 
   contentContainer.innerHTML = `
     <section class="content-section home-section">
       <h1 class="home-title">Sergio Hernández</h1>
-      <p class="home-subtitle">Game developer — Unreal Engine, Godot &amp; web games, plus 3D art in Blender. Explore my work below, or filter by engine.</p>
-      <div class="filter-chips">${chipsHTML}</div>
+      <p class="home-subtitle">Game developer — Unreal Engine, Godot &amp; web games, plus 3D art in Blender. Explore my work below, or see everything (including what's in progress) from the grid card.</p>
       <div class="projects-carousel" id="projects-carousel">${projectsHTML}</div>
       <p class="carousel-hint" id="carousel-hint"><i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i> Scroll, or click and drag, to see more projects</p>
       <div class="project-detail-panel" id="project-detail-panel"></div>
@@ -926,7 +913,6 @@ function renderHomeView() {
   `;
 
   bindHomeViewEvents();
-  applyFilter(activeFilter);
 }
 
 // Only fade the edge that actually has more cards hidden past it —
@@ -950,21 +936,6 @@ function updateCarouselHint() {
   if (!hint || !carousel) return;
   const hasOverflow = carousel.scrollWidth > carousel.clientWidth + 1;
   hint.classList.toggle('visible', hasOverflow && !currentOpenProjectTitle);
-}
-
-// Scrolls so the card lands in position 1, not 0 (0 sits under the left edge fade).
-function scrollCarouselToCard(card) {
-  const carousel = document.getElementById('projects-carousel');
-  if (!carousel || !card) return;
-
-  const visibleCards = [...carousel.querySelectorAll('.project-card:not(.filtered-out)')];
-  const index = visibleCards.indexOf(card);
-  const targetCard = index > 0 ? visibleCards[index - 1] : card;
-
-  const carouselRect = carousel.getBoundingClientRect();
-  const targetRect = targetCard.getBoundingClientRect();
-  const targetScrollLeft = carousel.scrollLeft + (targetRect.left - carouselRect.left);
-  carousel.scrollTo({ left: Math.max(0, targetScrollLeft), behavior: 'smooth' });
 }
 
 // Slides `card` to the front via FLIP: measure every real card, move the
@@ -1091,17 +1062,6 @@ function initDragToScroll(el, tokenHolder) {
 }
 
 function bindHomeViewEvents() {
-  const filterChipsEl = contentContainer.querySelector('.filter-chips');
-  const filterChipsWasDragged = initDragToScroll(filterChipsEl);
-
-  contentContainer.querySelectorAll('.filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      if (filterChipsWasDragged()) return;
-      if (chip.dataset.filter === activeFilter) return;
-      applyFilter(chip.dataset.filter);
-    });
-  });
-
   const carousel = document.getElementById('projects-carousel');
   // Module-level, so reorderCarouselWithFlip can cancel an in-flight glide too.
   carouselScrollToken = { value: 0 };
@@ -1110,7 +1070,7 @@ function bindHomeViewEvents() {
   observeCarouselVisibility();
 
   contentContainer.querySelectorAll('.project-card').forEach(card => {
-    if (card.classList.contains('bookend-card')) return; // decorative, no project behind it
+    if (card.classList.contains('bookend-card')) return; // handled separately below
 
     makeKeyboardClickable(card);
     card.addEventListener('click', () => {
@@ -1130,16 +1090,11 @@ function bindHomeViewEvents() {
       const description = card.dataset.projectDescription;
       const gallery = JSON.parse(card.dataset.projectGallery || '[]');
 
-      if (activeFilter === 'all') {
-        // No manual lock here — reorderCarouselWithFlip blocks pointer-events
-        // during the slide, and openProjectWindow arms its own lock.
-        reorderCarouselWithFlip(card).then(() => {
-          openProjectWindow(title, image, description, gallery);
-        });
-      } else {
-        scrollCarouselToCard(card);
+      // No manual lock here — reorderCarouselWithFlip blocks pointer-events
+      // during the slide, and openProjectWindow arms its own lock.
+      reorderCarouselWithFlip(card).then(() => {
         openProjectWindow(title, image, description, gallery);
-      }
+      });
     });
 
     // Clickable/hoverable again as soon as THIS card's own entrance finishes.
@@ -1147,53 +1102,34 @@ function bindHomeViewEvents() {
       if (e.animationName === 'cardFadeUp') card.classList.add('entrance-done');
     });
   });
-}
 
-function applyFilter(filterKey) {
-  activeFilter = filterKey;
-  body.className = filterKey === 'all' ? '' : sectionsContent[filterKey].background;
-
-  const openPanel = document.getElementById('project-detail-panel');
-  if (openPanel && openPanel.classList.contains('active')) {
-    closeProjectWindow();
+  const gridCard = document.getElementById('grid-bookend-card');
+  if (gridCard) {
+    makeKeyboardClickable(gridCard);
+    gridCard.addEventListener('click', () => {
+      if (carouselDragged()) return;
+      if (currentOpenProjectTitle === GRID_VIEW_TITLE) {
+        closeProjectWindow();
+      } else {
+        openGridView();
+      }
+    });
+    gridCard.addEventListener('animationend', e => {
+      if (e.animationName === 'cardFadeUp') gridCard.classList.add('entrance-done');
+    });
   }
 
-  contentContainer.querySelectorAll('.filter-chip').forEach(chip => {
-    chip.classList.toggle('active', chip.dataset.filter === filterKey);
-  });
-
-  // Recompute each visible card's stagger delay from its rank among only the
-  // currently-visible cards (coming-soon cards sit after all real ones in the
-  // unfiltered list, so a mixed filtered view needs its own left-to-right order).
-  let visibleIndex = 0;
-  contentContainer.querySelectorAll('.project-card').forEach(card => {
-    // Bookends have no data-section — always visible, not tied to one engine.
-    const matches = filterKey === 'all' || card.dataset.section === filterKey || card.classList.contains('bookend-card');
-    const wasHidden = card.classList.contains('filtered-out');
-
-    if (matches) {
-      card.style.animationDelay = `${Math.min(visibleIndex, 12) * 0.05}s`;
-      visibleIndex++;
-    }
-
-    // Only replay the entrance for cards newly going hidden -> visible.
-    if (matches && wasHidden) {
-      card.classList.remove('entrance-done');
-    }
-
-    card.classList.toggle('filtered-out', !matches);
-  });
-
-  // The divider only makes sense in the unfiltered "All Projects" layout.
-  const divider = document.getElementById('carousel-divider');
-  if (divider) divider.classList.toggle('filtered-out', filterKey !== 'all');
-
-  const carousel = document.getElementById('projects-carousel');
-  if (carousel) {
-    carousel.scrollLeft = 0;
-    updateCarouselEdgeFade(carousel);
+  const welcomeCard = document.getElementById('welcome-bookend-card');
+  if (welcomeCard) {
+    makeKeyboardClickable(welcomeCard);
+    welcomeCard.addEventListener('click', () => {
+      if (carouselDragged()) return;
+      showWelcomeCardMessage();
+    });
+    welcomeCard.addEventListener('animationend', e => {
+      if (e.animationName === 'cardFadeUp') welcomeCard.classList.add('entrance-done');
+    });
   }
-  updateCarouselHint();
 }
 
 /* ============================================================
@@ -1201,7 +1137,9 @@ function applyFilter(filterKey) {
    ============================================================ */
 let comingSoonMessageTimeout = null;
 
-function showComingSoonMessage(projectTitle) {
+// Shared short-lived toast — used for both the "coming soon" project message
+// and any other brief informational popup (see showWelcomeCardMessage).
+function showInfoToast(titleHTML, description) {
   let messageEl = document.getElementById('coming-soon-message');
 
   if (!messageEl) {
@@ -1223,8 +1161,8 @@ function showComingSoonMessage(projectTitle) {
 
   messageEl.innerHTML = `
     <div class="coming-soon-content">
-      <p><strong>${projectTitle}</strong> is coming soon!</p>
-      <p>Stay tuned for updates.</p>
+      <p>${titleHTML}</p>
+      <p>${description}</p>
       <button class="coming-soon-close">Close</button>
     </div>
   `;
@@ -1245,6 +1183,14 @@ function showComingSoonMessage(projectTitle) {
       messageEl.classList.remove('active');
     }
   }, 3000);
+}
+
+function showComingSoonMessage(projectTitle) {
+  showInfoToast(`<strong>${projectTitle}</strong> is coming soon!`, 'Stay tuned for updates.');
+}
+
+function showWelcomeCardMessage() {
+  showInfoToast('This feature is still under construction', 'Visit the profile window in the top-right corner to connect with me.');
 }
 
 function renderProfileContent() {
@@ -1499,7 +1445,7 @@ function openProjectWindow(title, image, description, galleryImages) {
       </div>
       <div class="project-detail-footer">
         <button class="project-nav-btn project-nav-back" id="project-nav-back">
-          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to all projects
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to carousel
         </button>
       </div>
     </div>
@@ -1551,8 +1497,9 @@ function openProjectWindow(title, image, description, galleryImages) {
 
     const backBtn = document.getElementById('project-nav-back');
     if (backBtn) {
+      // Just scrolls back up to the carousel — the project stays open/
+      // selected, unlike closing it, so coming back down returns to it as-is.
       backBtn.addEventListener('click', () => {
-        closeProjectWindow();
         const carousel = document.getElementById('projects-carousel');
         if (carousel) smoothScrollTo(window.scrollY + carousel.getBoundingClientRect().top, 800);
       });
@@ -1597,6 +1544,170 @@ function closeProjectWindow() {
 
   // observeCarouselVisibility keeps running — the carousel itself is unaffected.
   scrollToProjectBtn?.classList.remove('visible');
+}
+
+/* ============================================================
+   ALL-PROJECTS GRID VIEW (opened from the grid bookend card)
+   Reuses the project panel's open/close/selected machinery via
+   GRID_VIEW_TITLE, but renders a filterable grid of every project
+   (real and coming-soon) instead of a single project's content.
+   ============================================================ */
+function openGridView() {
+  if (projectTransitionLock) return;
+  if (currentOpenProjectTitle === GRID_VIEW_TITLE) return;
+
+  const panel = document.getElementById('project-detail-panel');
+  if (!panel) return;
+
+  if (panel.classList.contains('active')) {
+    panel.classList.remove('active');
+  }
+
+  if (currentVideo) {
+    currentVideo.pause();
+    currentVideo.removeEventListener('play', onVideoPlay);
+    currentVideo.removeEventListener('pause', onVideoPause);
+    currentVideo.removeEventListener('ended', onVideoEnded);
+    currentVideo = null;
+    restoreAmbientMusic();
+  }
+
+  clearPageBackground();
+  body.className = ''; // the grid always uses the default background, regardless of where it's opened from
+  currentOpenProjectTitle = GRID_VIEW_TITLE;
+  gridViewActiveFilter = 'all';
+  updateCarouselHint();
+
+  contentContainer.querySelectorAll('.project-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.projectTitle === GRID_VIEW_TITLE);
+  });
+
+  panel.innerHTML = gridViewHTML();
+
+  requestAnimationFrame(() => {
+    panel.classList.remove('active');
+    void panel.offsetWidth;
+    panel.classList.add('active');
+    updateScrollToProjectBtnVisibility();
+    bindGridViewEvents();
+  });
+}
+
+function gridViewHTML() {
+  const chips = [{ key: 'all', label: 'All Projects' }]
+    .concat(SECTION_ORDER.map(key => ({ key, label: sectionsContent[key].engine })));
+  const chipsHTML = chips
+    .map(chip => `<button class="filter-chip ${chip.key === 'all' ? 'active' : ''}" data-filter="${chip.key}">${chip.label}</button>`)
+    .join('');
+
+  const { real, comingSoon } = getAllProjectsFlat();
+  const cardsHTML = [...real, ...comingSoon]
+    .map((entry, i) => projectCardHTML(entry, i))
+    .join('');
+
+  return `
+    <div class="all-projects-view">
+      <div class="project-hero-title"><h1 id="project-detail-heading" tabindex="-1">All Projects</h1></div>
+      <div class="filter-chips">${chipsHTML}</div>
+      <div class="all-projects-grid" id="all-projects-grid">${cardsHTML}</div>
+      <div class="project-detail-footer grid-back-to-top" id="grid-back-to-top-wrap" hidden>
+        <button class="project-nav-btn project-nav-back" id="grid-nav-back">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to carousel
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Only shown once the grid's own content actually overflows the viewport —
+// on a screen where everything already fits, scrolling back up manually
+// takes no effort, so the shortcut would just be clutter.
+function updateGridBackToTopVisibility() {
+  const wrap = document.getElementById('grid-back-to-top-wrap');
+  if (!wrap) return;
+  const html = document.documentElement;
+  wrap.hidden = !(html.scrollHeight > html.clientHeight + 40);
+}
+
+function bindGridViewEvents() {
+  const panel = document.getElementById('project-detail-panel');
+  if (!panel) return;
+
+  cancelPageScrollAnimation();
+  const heading = document.getElementById('project-detail-heading');
+  if (heading) heading.focus({ preventScroll: true });
+
+  const chipsRow = panel.querySelector('.filter-chips');
+  const chipsDragged = initDragToScroll(chipsRow);
+  panel.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (chipsDragged()) return;
+      if (chip.dataset.filter === gridViewActiveFilter) return;
+      applyGridFilter(chip.dataset.filter);
+    });
+  });
+
+  panel.querySelectorAll('#all-projects-grid .project-card').forEach(card => {
+    makeKeyboardClickable(card);
+    card.addEventListener('click', () => {
+      const title = card.dataset.projectTitle;
+      if (card.dataset.comingSoon === 'true') {
+        showComingSoonMessage(title);
+        return;
+      }
+      if (projectTransitionLock) return;
+      const image = card.dataset.projectImage;
+      const description = card.dataset.projectDescription;
+      const gallery = JSON.parse(card.dataset.projectGallery || '[]');
+
+      // Reorder the *carousel's* copy of this card to the front, same as a
+      // direct carousel click, so it isn't left clickable-but-already-open
+      // in its old spot once the grid is replaced by the project content.
+      const carouselCard = [...document.querySelectorAll('#projects-carousel > .project-card')]
+        .find(c => c.dataset.projectTitle === title);
+      if (carouselCard) {
+        reorderCarouselWithFlip(carouselCard).then(() => {
+          openProjectWindow(title, image, description, gallery);
+        });
+      } else {
+        openProjectWindow(title, image, description, gallery);
+      }
+    });
+
+    // Clickable/hoverable again as soon as THIS card's own entrance finishes.
+    card.addEventListener('animationend', e => {
+      if (e.animationName === 'cardFadeUp') card.classList.add('entrance-done');
+    });
+  });
+
+  const gridBackBtn = document.getElementById('grid-nav-back');
+  if (gridBackBtn) {
+    // Same as #project-nav-back — just scrolls up, doesn't close the grid.
+    gridBackBtn.addEventListener('click', () => {
+      const carousel = document.getElementById('projects-carousel');
+      if (carousel) smoothScrollTo(window.scrollY + carousel.getBoundingClientRect().top, 800);
+    });
+  }
+
+  updateGridBackToTopVisibility();
+}
+
+function applyGridFilter(filterKey) {
+  gridViewActiveFilter = filterKey;
+
+  const panel = document.getElementById('project-detail-panel');
+  if (!panel) return;
+
+  panel.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.filter === filterKey);
+  });
+
+  panel.querySelectorAll('#all-projects-grid .project-card').forEach(card => {
+    const matches = filterKey === 'all' || card.dataset.section === filterKey;
+    card.classList.toggle('filtered-out', !matches);
+  });
+
+  updateGridBackToTopVisibility();
 }
 
 /* ============================================================
@@ -1726,7 +1837,18 @@ let isCarouselInView = true;
 let carouselVisibilityObserver = null;
 
 function updateScrollToProjectBtnVisibility() {
-  scrollToProjectBtn?.classList.toggle('visible', !!currentOpenProjectTitle && isCarouselInView);
+  const html = document.documentElement;
+  const hasMoreToScroll = html.scrollHeight > html.clientHeight + 40;
+  // isCarouselInView alone isn't enough when the whole page barely scrolls
+  // (e.g. the grid view on a short viewport) — the carousel's top edge can
+  // still poke into view even once scrolled all the way down, since there's
+  // not much scroll range to begin with. This checks the actual remaining
+  // scroll distance directly, so the button hides once there's nowhere
+  // left to jump to regardless of what's still peeking into view.
+  const atBottom = (html.scrollHeight - html.clientHeight - window.scrollY) < 40;
+  scrollToProjectBtn?.classList.toggle('visible', !!currentOpenProjectTitle && isCarouselInView && hasMoreToScroll && !atBottom);
+  const label = scrollToProjectBtn?.querySelector('span');
+  if (label) label.textContent = currentOpenProjectTitle === GRID_VIEW_TITLE ? 'View All' : 'View Project';
 }
 
 function observeCarouselVisibility() {
@@ -1751,6 +1873,7 @@ function goHome() {
   currentSection = 'home';
 
   closeProjectWindow();
+  body.className = ''; // clears any theme left behind (e.g. the profile's)
   profileBtn.classList.remove('profile-active');
   headerBrand?.classList.add('active');
   hideAllSections();
@@ -2032,14 +2155,9 @@ function bindSearchResultClicks() {
 }
 
 // Brings the searched project's card to the front and opens it. Rebuilds the
-// home view only when coming from a different section; otherwise just switches
-// the filter (which closes any open project itself, see applyFilter).
+// home view only when coming from a different section.
 function openSearchedProject(title, image, description, gallery) {
-  if (currentSection === 'home') {
-    if (activeFilter !== 'all') applyFilter('all');
-  } else {
-    goHome();
-  }
+  if (currentSection !== 'home') goHome();
 
   const matchedCard = [...contentContainer.querySelectorAll('.project-card')].find(c => c.dataset.projectTitle === title);
   if (matchedCard) {
@@ -2051,26 +2169,20 @@ function openSearchedProject(title, image, description, gallery) {
   }
 }
 
-// Same idea for a coming-soon project found via search (see openSearchedProject).
+// Coming-soon projects only live in the grid view now, so surface that
+// instead of the (real-projects-only) carousel.
 function revealSearchedComingSoon(title) {
-  if (currentSection === 'home') {
-    if (activeFilter !== 'all') applyFilter('all');
-  } else {
-    goHome();
-  }
-
-  const matchedCard = [...contentContainer.querySelectorAll('.project-card')].find(c => c.dataset.projectTitle === title);
-  if (matchedCard) scrollCarouselToCard(matchedCard);
+  if (currentSection !== 'home') goHome();
+  openGridView();
   showComingSoonMessage(title);
 }
 
-function navigateToSection(section, callback) {
-  goHome();
-  applyFilter(section);
-
-  if (callback) {
-    setTimeout(callback, 150);
-  }
+// Used by the "engine" search results — opens the grid view pre-filtered
+// to that engine, since filtering no longer lives on the home page itself.
+function navigateToSection(section) {
+  if (currentSection !== 'home') goHome();
+  openGridView();
+  applyGridFilter(section);
 }
 
 searchBtn.addEventListener('click', openSearch);
@@ -2252,6 +2364,12 @@ function updatePageScrollbar() {
 
   requestAnimationFrame(() => {
     scrollbarUpdateQueued = false;
+    // Re-checks whether there's still something below the fold to scroll to —
+    // content (e.g. images) finishing loading, or the window resizing, can
+    // change that after the panel's own open/reveal already ran this once.
+    updateScrollToProjectBtnVisibility();
+    updateGridBackToTopVisibility();
+
     if (!pageScrollbar || !pageScrollbarThumb) return;
 
     const html = document.documentElement;
