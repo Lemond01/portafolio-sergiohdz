@@ -81,11 +81,10 @@ function makeKeyboardClickable(el) {
   });
 }
 
-// Centralized <img> error fallback — replaces the inline onerror="..."
-// attributes that used to be scattered across every <img> tag. Image load
-// errors don't bubble, so this listens on the capturing phase instead of
-// delegating the normal way; that's what lets one listener cover every
-// image on the page, present and future, without wiring each one by hand.
+// Centralized <img> error fallback, applied to every image on the page
+// (present and future) via a single listener instead of an inline
+// onerror="..." attribute per tag. Image load errors don't bubble, so this
+// listens on the capturing phase instead of delegating the normal way.
 // CSS classes pick the behavior per-image (logo vs. project art):
 //   .img-hide-on-error        → just hide it (the logo/avatar images)
 //   .img-fallback-coming-soon → swap to the coming-soon placeholder
@@ -182,8 +181,51 @@ function proceedToHomeView() {
       currentSection = 'home';
       headerBrand?.classList.add('active');
       renderHomeView();
+      showWelcomeNotification();
     }, CONFIG.loadingFadeOut);
   }, CONFIG.loadingScreenDuration);
+}
+
+/* ============================================================
+   WELCOME NOTIFICATION (one-time toast after the loading screen)
+   ============================================================ */
+const WELCOME_NOTIFICATION_DURATION_MS = 5000;
+let welcomeNotificationTimer = null;
+let welcomeNotificationShownAt = null;
+let welcomeNotificationRemainingMs = WELCOME_NOTIFICATION_DURATION_MS;
+
+function showWelcomeNotification() {
+  const el = document.getElementById('welcome-notification');
+  if (!el) return;
+
+  requestAnimationFrame(() => el.classList.add('visible'));
+
+  welcomeNotificationRemainingMs = WELCOME_NOTIFICATION_DURATION_MS;
+  armWelcomeNotificationTimer();
+
+  // Hovering pauses the auto-dismiss (tracked as remaining time, not just
+  // a flag) so leaving mid-countdown resumes with whatever was left rather
+  // than a fresh 5s — and if the countdown had already finished while
+  // hovered, the remaining time is just ~0, so it dismisses right as the
+  // mouse leaves instead of mid-hover.
+  el.addEventListener('mouseenter', () => {
+    if (!welcomeNotificationTimer) return;
+    clearTimeout(welcomeNotificationTimer);
+    welcomeNotificationTimer = null;
+    welcomeNotificationRemainingMs = Math.max(0, welcomeNotificationRemainingMs - (Date.now() - welcomeNotificationShownAt));
+  });
+  el.addEventListener('mouseleave', () => {
+    if (welcomeNotificationTimer) return;
+    armWelcomeNotificationTimer();
+  });
+}
+
+function armWelcomeNotificationTimer() {
+  welcomeNotificationShownAt = Date.now();
+  welcomeNotificationTimer = setTimeout(() => {
+    welcomeNotificationTimer = null;
+    document.getElementById('welcome-notification')?.classList.remove('visible');
+  }, welcomeNotificationRemainingMs);
 }
 
 function preloadImages(sources, onComplete) {
@@ -222,10 +264,10 @@ function handleUserInteraction() {
 
 function checkIfLoaded() {
   // Only the loading screen's own logo gates entry into the site — none of
-  // the 18 projects' cover/gallery images. On a bad connection, waiting on
-  // dozens of project images before the user can even press "start" made
-  // the whole site feel stuck; those now load progressively (lazily, as
-  // each card actually scrolls into view) once the user is already in.
+  // the projects' cover/gallery images, which load progressively (lazily,
+  // as each card actually scrolls into view) once the visitor is already
+  // in. Gating entry on dozens of project images first would make the site
+  // feel stuck on a slow connection for little benefit.
   const criticalImages = ['assets/shared/logo.jpg'];
 
   preloadImages(criticalImages, () => {
@@ -281,10 +323,10 @@ function startWelcomeMusicWithFadeIn() {
         }
       }, intervalTime);
     }).catch(error => {
-      console.log("Error al iniciar música de bienvenida:", error);
+      console.log("Error starting welcome music:", error);
       setTimeout(() => {
         if (welcomeAudio && !welcomeAudio.paused) return;
-        welcomeAudio.play().catch(e => console.log("Segundo intento fallido:", e));
+        welcomeAudio.play().catch(e => console.log("Second attempt failed:", e));
       }, 500);
     });
   }
@@ -372,7 +414,7 @@ function restoreAmbientMusic() {
 }
 
 /* ============================================================
-   DATA - AQUÍ PONEN SUS PROPIAS IMÁGENES DE GALERÍA
+   PROJECT DATA — sections, projects, and their gallery images
    ============================================================ */
 const sectionsContent = {
   'game-development': {
@@ -902,7 +944,14 @@ function renderHomeView() {
   const dividerHTML = comingSoon.length > 0
     ? `<div class="carousel-divider" id="carousel-divider" aria-hidden="true"><span>More in<br>progress</span></div>`
     : '';
-  const projectsHTML = realHTML + dividerHTML + comingSoonHTML;
+  // Decorative bookends — not real projects, so they're excluded from the
+  // click/FLIP-reorder/filter logic in bindHomeViewEvents, reorderCarousel
+  // WithFlip, and applyFilter (all three check for .bookend-card).
+  const bookendStartHTML = `<div class="project-card bookend-card" aria-hidden="true"><img src="assets/shared/welcome-logo.png" alt="" class="bookend-card-icon"></div>`;
+  const bookendEndHTML = `<div class="project-card bookend-card" aria-hidden="true"><img src="assets/shared/grid-logo.png" alt="" class="bookend-card-icon"></div>`;
+  // The "grid" bookend sits right after the last *real* project (before the
+  // divider/coming-soon tail), not at the true end of the whole carousel.
+  const projectsHTML = bookendStartHTML + realHTML + bookendEndHTML + dividerHTML + comingSoonHTML;
 
   contentContainer.innerHTML = `
     <section class="content-section home-section">
@@ -924,9 +973,12 @@ function renderHomeView() {
 // the last card when there's nothing to its right.
 function updateCarouselEdgeFade(carousel) {
   if (!carousel) return;
+  // A few px of slack so browser-zoom scrollLeft rounding can't strand a
+  // real edge a hair short of maxScroll/0 with its fade still showing.
+  const EDGE_TOLERANCE = 8;
   const maxScroll = carousel.scrollWidth - carousel.clientWidth;
-  carousel.classList.toggle('at-start', carousel.scrollLeft <= 1);
-  carousel.classList.toggle('at-end', carousel.scrollLeft >= maxScroll - 1);
+  carousel.classList.toggle('at-start', carousel.scrollLeft <= EDGE_TOLERANCE);
+  carousel.classList.toggle('at-end', carousel.scrollLeft >= maxScroll - EDGE_TOLERANCE);
 }
 
 // Only hints at scrolling/dragging when there's actually more to see (the
@@ -979,7 +1031,7 @@ function reorderCarouselWithFlip(card) {
     const carousel = document.getElementById('projects-carousel');
     if (!carousel || !card) { resolve(); return; }
 
-    const realCards = [...carousel.querySelectorAll('.project-card:not(.coming-soon)')];
+    const realCards = [...carousel.querySelectorAll('.project-card:not(.coming-soon):not(.bookend-card)')];
     if (realCards[0] === card) { resolve(); return; }
 
     // A momentum glide from an earlier wheel scroll could still be mid-
@@ -988,12 +1040,10 @@ function reorderCarouselWithFlip(card) {
     // that loop's next frame to stop.
     if (carouselScrollToken) carouselScrollToken.value++;
 
-    // Measure every card's *actual current* on-screen position first —
-    // capturing this after resetting scrollLeft (like this used to) baked
-    // that reset into the "before" snapshot, so the whole row silently
-    // teleported to its scrolled-to-start positions before the FLIP
-    // animation even began, instead of sliding from wherever the visitor
-    // was actually looking.
+    // Measure every card's *actual current* on-screen position before
+    // resetting scrollLeft, so the FLIP animation slides from wherever the
+    // visitor was actually looking instead of from the scrolled-to-start
+    // position.
     const firstRects = new Map(realCards.map(c => [c, c.getBoundingClientRect()]));
 
     // Now it's safe to snap the viewport back to the start in the same
@@ -1001,7 +1051,11 @@ function reorderCarouselWithFlip(card) {
     // firstRects captures both the scroll reset and the reorder as one
     // continuous slide.
     carousel.scrollLeft = 0;
-    carousel.insertBefore(card, carousel.firstChild);
+    // Insert before the current first *real* card (not carousel.firstChild)
+    // so the decorative bookend card at the very start of the carousel
+    // (see renderHomeView) stays in front of everything, even after a
+    // reorder.
+    carousel.insertBefore(card, realCards[0]);
 
     let anyMoved = false;
     realCards.forEach(c => {
@@ -1051,10 +1105,9 @@ function initDragToScroll(el, tokenHolder) {
   if (!el) return () => false;
 
   // Same momentum/velocity-amplified easing as the page's own vertical
-  // scroll (see createMomentumWheel) — without it this was a flat 1:1
-  // `scrollLeft += deltaY`, which snaps to each wheel notch individually
-  // instead of gliding, and needs just as many notches to cross the
-  // carousel as the page did before this same treatment.
+  // scroll (see createMomentumWheel), so the carousel glides across wheel
+  // notches instead of snapping one flat `scrollLeft += deltaY` step per
+  // notch.
   const momentum = REDUCE_MOTION_MQ.matches ? null : createMomentumWheel({
     getPos: () => el.scrollLeft,
     setPos: x => { el.scrollLeft = x; },
@@ -1135,8 +1188,14 @@ function bindHomeViewEvents() {
   carouselScrollToken = { value: 0 };
   const carouselDragged = initDragToScroll(carousel, carouselScrollToken);
   updateCarouselHint();
+  observeCarouselVisibility();
 
   contentContainer.querySelectorAll('.project-card').forEach(card => {
+    // Decorative bookends (see renderHomeView) — no project behind them,
+    // so they stay out of the click/keyboard/entrance-animation wiring
+    // below entirely.
+    if (card.classList.contains('bookend-card')) return;
+
     makeKeyboardClickable(card);
     card.addEventListener('click', () => {
       if (carouselDragged()) return;
@@ -1161,17 +1220,14 @@ function bindHomeViewEvents() {
         // here — reorderCarouselWithFlip already blocks pointer-events on
         // every card for the slide's duration (see .reordering in
         // style.css), and openProjectWindow arms its own lock the instant
-        // it runs. Setting the lock here too used to double up: this lock
-        // plus openProjectWindow's *own* fresh one stacked their durations
-        // instead of overlapping, leaving clicks silently swallowed for
-        // FLIP_DURATION_MS + PROJECT_TRANSITION_LOCK_MS instead of just
-        // the latter.
+        // it runs; locking here too would just stack both durations
+        // instead of letting them overlap.
         reorderCarouselWithFlip(card).then(() => {
           openProjectWindow(title, image, description, gallery);
         });
       } else {
-        // Filtered to a specific engine: unchanged for now, just scrolls
-        // the viewport to the card like before.
+        // Filtered to a specific engine: just scrolls the viewport to the
+        // card, no reorder.
         scrollCarouselToCard(card);
         openProjectWindow(title, image, description, gallery);
       }
@@ -1203,16 +1259,18 @@ function applyFilter(filterKey) {
   // Each card's stagger delay (set inline by projectCardHTML) is based on
   // its position in the full, unfiltered list — fine for "All Projects",
   // but every coming-soon card sits after all the real ones in that list
-  // (see getAllProjectsFlat), so filtering to a mix of both kept a coming-
-  // soon card's "I'm 8th overall" delay even when it visually landed 2nd
-  // or 3rd in the filtered lineup, making it lag behind its neighbors
-  // instead of animating in the same left-to-right sequence. Recomputing
-  // it here from the card's rank among only the currently-visible cards
-  // fixes that without touching cardFadeUp itself (same animation, same
-  // duration/easing — just a truthful "which number am I now" delay).
+  // (see getAllProjectsFlat), so a filtered view that mixes both needs its
+  // own delay recomputed from each card's rank among only the currently-
+  // visible cards, or it would animate out of left-to-right order. Doesn't
+  // touch cardFadeUp itself (same animation, same duration/easing — just a
+  // truthful "which number am I now" delay).
   let visibleIndex = 0;
   contentContainer.querySelectorAll('.project-card').forEach(card => {
-    const matches = filterKey === 'all' || card.dataset.section === filterKey;
+    // Bookends have no data-section (they're not real projects) — they
+    // stay visible across every filter instead of only matching "All
+    // Projects", since they bookend the carousel itself, not any one
+    // engine's subset of it.
+    const matches = filterKey === 'all' || card.dataset.section === filterKey || card.classList.contains('bookend-card');
     const wasHidden = card.classList.contains('filtered-out');
 
     if (matches) {
@@ -1374,11 +1432,10 @@ async function setPageBackground(imageUrl) {
   }
 
   // Preload (and decode, where supported) before ever touching
-  // backgroundImage — without this, on a slow connection the element
-  // switched to the new URL instantly and sat on a blank rect until the
-  // image itself finished downloading, instead of fading in art that was
-  // already ready to paint. A decode() failure (bad/aborted image) is
-  // swallowed so it can't leave the sequence stuck.
+  // backgroundImage, so the element only switches to the new URL once that
+  // art is actually ready to paint, rather than sitting on a blank rect on
+  // a slow connection while it downloads. A decode() failure (bad/aborted
+  // image) is swallowed so it can't leave the sequence stuck.
   const img = new Image();
   img.src = imageUrl;
   await img.decode().catch(() => {});
@@ -1434,12 +1491,10 @@ function openProjectWindow(title, image, description, galleryImages) {
   if (!panel) return;
 
   // Switching straight from an already-open project: hide its content now,
-  // before the new innerHTML is assigned below. Without this the new
-  // project's markup replaced the old one while .active was still set, so
-  // it was visible immediately — then revealPanelContent()'s own
-  // remove/re-add of .active hid it and brought it back a moment later,
-  // which is what looked like content appearing, disappearing, then
-  // reappearing.
+  // before the new innerHTML is assigned below, so the outgoing project's
+  // markup is never visible at the same time as (or replaced in place by)
+  // the incoming one. revealPanelContent() re-adds .active once the new
+  // content and background are actually ready.
   if (panel.classList.contains('active')) {
     panel.classList.remove('active');
   }
@@ -1455,11 +1510,10 @@ function openProjectWindow(title, image, description, galleryImages) {
 
   projectTransitionLock = true;
   // Released the moment the reveal animation (projectDetailReveal, inside
-  // revealPanelContent below) actually finishes, rather than a fixed timer
-  // that had to guess the whole background-crossfade-plus-reveal duration
-  // up front. PROJECT_TRANSITION_LOCK_MS below is now only a safety-net
-  // fallback for the rare case that path never runs (e.g. the background
-  // image never finishes loading), so the UI can't get stuck locked.
+  // revealPanelContent below) actually finishes. PROJECT_TRANSITION_LOCK_MS
+  // is only a safety-net fallback for the rare case that path never runs
+  // (e.g. the background image never finishes loading), so the UI can't
+  // get stuck locked.
   let lockReleased = false;
   function releaseTransitionLock() {
     if (lockReleased) return;
@@ -1493,10 +1547,9 @@ function openProjectWindow(title, image, description, galleryImages) {
 
   const formattedDescription = description ? description.replace(/\n/g, '<br>') : '';
 
-  // 🔍 BUSCAR EL PROYECTO EN LOS DATOS PARA OBTENER SUS VALORES ESPECÍFICOS
+  // Look up the project's own data across every section, for its specific values
   let projectData = null;
-  
-  // Buscar en todas las secciones
+
   Object.keys(sectionsContent).forEach(sectionKey => {
     const section = sectionsContent[sectionKey];
     if (section && section.projects) {
@@ -1507,7 +1560,7 @@ function openProjectWindow(title, image, description, galleryImages) {
     }
   });
 
-  // Si no se encontró el proyecto, usar valores por defecto
+  // Fall back to generic placeholder values if the project isn't found
   if (!projectData) {
     projectData = {
       techTags: ['Unreal Engine 5', 'Blueprints', 'C++', 'UMG'],
@@ -1523,12 +1576,12 @@ function openProjectWindow(title, image, description, galleryImages) {
     };
   }
 
-  // Crear HTML de tech tags
+  // Build the tech-tags markup
   const techTagsHTML = projectData.techTags && projectData.techTags.length > 0
     ? projectData.techTags.map(tag => `<span class="tech-tag">${tag}</span>`).join('')
     : '';
 
-  // Crear HTML de contribuciones
+  // Build the contributions markup
   const contributionsHTML = projectData.contributions && projectData.contributions.length > 0
     ? projectData.contributions.map(p => `<p>${p}</p>`).join('')
     : '<p>No contributions data available.</p>';
@@ -1545,10 +1598,9 @@ function openProjectWindow(title, image, description, galleryImages) {
   // Most projects show a click-to-play teaser video, declared explicitly
   // per-project via `projectData.video`. Some (e.g. the Guerrero model)
   // don't have a teaser and use a silent, looping turntable clip instead —
-  // declared via `projectData.media`. `video-loop` used to be an animated
-  // GIF; it's now an autoplaying muted <video> with the same visual effect
-  // at a fraction of the file size (a 45MB GIF becomes a ~2MB video with
-  // an identical loop).
+  // declared via `projectData.media`. That clip is an autoplaying muted
+  // <video> (the `project-media-gif` class name is legacy — it reads like
+  // a GIF but is a far smaller video file).
   const mediaHTML = projectData.media && projectData.media.type === 'video-loop'
     ? `<video class="project-media-gif" autoplay loop muted playsinline>
          <source src="${projectData.media.src}" type="video/mp4">
@@ -1607,10 +1659,10 @@ function openProjectWindow(title, image, description, galleryImages) {
   // .project-detail-panel in style.css), so everything above this point —
   // building and assigning the HTML included — is invisible regardless of
   // timing. That's what lets the reveal itself wait for the background:
-  // this only runs once setPageBackground's promise resolves, which now
-  // happens only after the background's own fade-in transition has fully
-  // finished — so the background is already fully visible by the time the
-  // content reveal plays, with no extra fixed pause needed on top of that.
+  // this only runs once setPageBackground's promise resolves, which happens
+  // only after the background's own fade-in transition has fully finished —
+  // so the background is already fully visible by the time the content
+  // reveal plays.
   function revealPanelContent() {
     // Force the reveal animation to (re)play even when the panel is
     // already open and we're just swapping to a different project.
@@ -1618,12 +1670,10 @@ function openProjectWindow(title, image, description, galleryImages) {
     void panel.offsetWidth;
     panel.classList.add('active');
     updateScrollToProjectBtnVisibility();
-    observeProjectDetailFooter();
 
     // Releases projectTransitionLock as soon as this reveal animation
     // (projectDetailReveal, 0.45s — see .project-detail-panel.active in
-    // style.css) actually finishes, instead of the fixed timer this used
-    // to rely on.
+    // style.css) actually finishes.
     panel.addEventListener('animationend', function onReveal(e) {
       if (e.animationName !== 'projectDetailReveal') return;
       panel.removeEventListener('animationend', onReveal);
@@ -1649,16 +1699,13 @@ function openProjectWindow(title, image, description, galleryImages) {
     // for video-loop / no-teaser projects.
     //
     // focus() by default triggers the browser's own scroll-into-view, which
-    // our custom scroll systems know nothing about — if a wheel-momentum
-    // glide from earlier (e.g. scrolling the home page right before
-    // clicking a card) was still mid-flight, it kept fighting that native
-    // scroll for control of the position every frame, which made the page
-    // visibly jump one way and then snap back the other way right as a
-    // project opened. cancelPageScrollAnimation() stops that leftover
-    // glide, and preventScroll stops focus() from scrolling at all — the
-    // page should never move just because a project opened, even for
-    // projects (like the video-loop ones) whose panel is short enough that
-    // a native scroll-into-view would otherwise have nothing to fight.
+    // our custom scroll systems know nothing about — an in-flight wheel-
+    // momentum glide (e.g. from scrolling the home page right before
+    // clicking a card) would fight that native scroll for control of the
+    // position every frame, making the page jump one way and then snap
+    // back the other. cancelPageScrollAnimation() cancels any such glide,
+    // and preventScroll stops focus() from scrolling at all — the page
+    // should never move just because a project opened.
     cancelPageScrollAnimation();
     if (video) {
       video.focus({ preventScroll: true });
@@ -1730,8 +1777,10 @@ function closeProjectWindow() {
     panel.innerHTML = '';
   }
 
-  projectBottomObserver?.disconnect();
-  isAtProjectContentBottom = false;
+  // The carousel-visibility observer (see observeCarouselVisibility) isn't
+  // touched here — it tracks the carousel itself, which is still on screen
+  // and unchanged by closing a project, and keeps running so it's already
+  // correctly set up if another project gets opened next.
   scrollToProjectBtn?.classList.remove('visible');
 }
 
@@ -1763,12 +1812,12 @@ const MOMENTUM_VELOCITY_REF = 80; // |deltaY| considered "one full unit" of velo
 // own momentum instance vs. the "View Project" button's smoothScrollTo,
 // below — both share one holder). Every driver increments the shared
 // value when it wants control and only keeps stepping while its own
-// snapshot still matches the live value; whichever one moved last simply
-// wins, instead of two rAF loops fighting the browser for scrollTop every
-// frame (which is what made the page briefly jump one way and snap back
-// the other way whenever a wheel-driven glide was still in flight when
-// something else — the button, or focus()'s own native scroll-into-view —
-// also tried to move the same scroll position).
+// snapshot still matches the live value, so whichever one moved last
+// simply wins instead of two rAF loops fighting the browser for scrollTop
+// every frame — which is what two scrollers would otherwise do if a wheel-
+// driven glide was still in flight when something else (the button, or
+// focus()'s own native scroll-into-view) also tried to move the same
+// scroll position.
 function createMomentumWheel({ getPos, setPos, getMax, tokenHolder }) {
   let target = null;
   let rafId = null;
@@ -1784,6 +1833,19 @@ function createMomentumWheel({ getPos, setPos, getMax, tokenHolder }) {
       return;
     }
     setPos(current + diff * MOMENTUM_EASE);
+    // At non-100% browser zoom, the browser can round scrollLeft to its own
+    // sub-pixel grid — a small enough step (near the end of the glide) can
+    // round right back to `current`, making no visible progress. Without
+    // this, that reads as "not there yet" forever: the loop keeps re-
+    // running the same no-op step, never reaches `target`, and — since the
+    // position genuinely never changes — never fires another native scroll
+    // event either, so whatever listens for one (e.g. the carousel's edge-
+    // fade class) never finds out the glide is effectively done.
+    if (getPos() === current) {
+      setPos(target);
+      rafId = null;
+      return;
+    }
     rafId = requestAnimationFrame(step);
   }
 
@@ -1899,31 +1961,32 @@ scrollToProjectBtn?.addEventListener('click', () => {
 });
 
 // The button's job is "jump down to the content you can't see yet" — once
-// the visitor has scrolled far enough to actually reach the bottom of that
-// content (the footer/back-button area), there's nothing left for it to
-// jump to, so it hides itself instead of floating there uselessly. Re-
-// observes a fresh target every time a project opens, since
-// project-detail-footer is a brand new element each time (panel.innerHTML
-// is fully replaced per project).
-let isAtProjectContentBottom = false;
-let projectBottomObserver = null;
+// the carousel itself has scrolled out of view, that job is already done
+// (the visitor is already looking at the project content, whether they
+// clicked the button or just scrolled there manually), so it hides right
+// away instead of waiting for them to reach the bottom of that content.
+// Scrolling back up and bringing the carousel back into view brings the
+// button back too. The carousel element is rebuilt fresh every
+// renderHomeView() call, so this is (re)wired from bindHomeViewEvents
+// rather than tied to individual project open/close cycles.
+let isCarouselInView = true;
+let carouselVisibilityObserver = null;
 
 function updateScrollToProjectBtnVisibility() {
-  scrollToProjectBtn?.classList.toggle('visible', !!currentOpenProjectTitle && !isAtProjectContentBottom);
+  scrollToProjectBtn?.classList.toggle('visible', !!currentOpenProjectTitle && isCarouselInView);
 }
 
-function observeProjectDetailFooter() {
-  projectBottomObserver?.disconnect();
-  isAtProjectContentBottom = false;
+function observeCarouselVisibility() {
+  carouselVisibilityObserver?.disconnect();
 
-  const footer = document.querySelector('.project-detail-footer');
-  if (!footer) return;
+  const carousel = document.getElementById('projects-carousel');
+  if (!carousel) return;
 
-  projectBottomObserver = new IntersectionObserver(([entry]) => {
-    isAtProjectContentBottom = entry.isIntersecting;
+  carouselVisibilityObserver = new IntersectionObserver(([entry]) => {
+    isCarouselInView = entry.isIntersecting;
     updateScrollToProjectBtnVisibility();
-  }, { threshold: 0.2 });
-  projectBottomObserver.observe(footer);
+  });
+  carouselVisibilityObserver.observe(carousel);
 }
 
 /* ============================================================
@@ -2272,7 +2335,7 @@ document.querySelectorAll('.search-suggestion-item').forEach(item => {
 });
 
 /* ============================================================
-   LIGHTBOX - IMÁGENES DEL CARRUSEL CON NAVEGACIÓN INFINITA
+   LIGHTBOX — gallery image viewer with wrap-around navigation
    ============================================================ */
 const lightbox = document.getElementById('lightbox');
 const lightboxImage = document.getElementById('lightbox-image');
@@ -2294,12 +2357,13 @@ function openLightbox(imageSrc, galleryImages, index) {
 
   lightboxTriggerEl = document.activeElement;
   lightboxImage.src = imageSrc;
-  lightboxImage.alt = 'Imagen ampliada';
+  lightboxImage.alt = 'Enlarged image';
   lightbox.classList.add('active');
   body.style.overflow = 'hidden';
   lightboxClose.focus();
-  
-  // Mostrar botones de navegación siempre (carrusel infinito)
+
+  // The gallery wraps around, so the nav buttons are always available
+  // whenever there's more than one image.
   if (currentGalleryImages.length > 1) {
     lightboxPrev.style.display = 'flex';
     lightboxNext.style.display = 'flex';
@@ -2316,27 +2380,24 @@ function openLightbox(imageSrc, galleryImages, index) {
 function navigateLightbox(direction) {
   if (currentGalleryImages.length <= 1) return;
   
-  // Calcular nuevo índice con wrap-around (carrusel infinito)
+  // Wrap around at either end instead of stopping.
   const totalImages = currentGalleryImages.length;
   let newIndex = currentGalleryIndex + direction;
-  
-  // Si es menor que 0, ir a la última imagen
+
   if (newIndex < 0) {
     newIndex = totalImages - 1;
-  }
-  // Si es mayor o igual al total, ir a la primera imagen
-  else if (newIndex >= totalImages) {
+  } else if (newIndex >= totalImages) {
     newIndex = 0;
   }
-  
+
   currentGalleryIndex = newIndex;
   const newSrc = currentGalleryImages[currentGalleryIndex];
-  
-  // Animación de transición suave
+
+  // Cross-fade to the new image rather than swapping it instantly.
   lightboxImage.style.opacity = '0';
   setTimeout(() => {
     lightboxImage.src = newSrc;
-    lightboxImage.alt = 'Imagen ampliada ' + (currentGalleryIndex + 1);
+    lightboxImage.alt = 'Enlarged image ' + (currentGalleryIndex + 1);
     lightboxImage.style.opacity = '1';
   }, 150);
 }
@@ -2360,15 +2421,15 @@ function closeLightbox() {
 lightboxClose.addEventListener('click', closeLightbox);
 lightboxOverlay.addEventListener('click', closeLightbox);
 lightboxPrev.addEventListener('click', function(e) {
-  e.stopPropagation(); // Prevenir que el clic se propague al overlay
+  e.stopPropagation(); // Don't let the click reach the overlay (which would close the lightbox)
   navigateLightbox(-1);
 });
 lightboxNext.addEventListener('click', function(e) {
-  e.stopPropagation(); // Prevenir que el clic se propague al overlay
+  e.stopPropagation(); // Don't let the click reach the overlay (which would close the lightbox)
   navigateLightbox(1);
 });
 
-// Teclas de navegación en el lightbox
+// Lightbox keyboard navigation
 document.addEventListener('keydown', (e) => {
   if (lightbox.classList.contains('active')) trapTabKey(e, lightbox);
   if (e.key === 'Escape' && lightbox.classList.contains('active')) {

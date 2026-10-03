@@ -50,9 +50,9 @@
   <!-- LOADING SCREEN -->
   <div id="loading-screen" class="loading-screen">
     <div class="loading-container" id="loading-container">
-      <!-- START PROMPT - TODO EL CONTENEDOR ES CLICKEABLE -->
+      <!-- START PROMPT - the entire container is clickable -->
       <div id="start-prompt" class="start-prompt">
-        <!-- LOGO WRAPPER: Logo + Pulse Rings centrados -->
+        <!-- LOGO WRAPPER: logo + pulse rings, centered -->
         <div class="logo-wrapper" id="logo-wrapper">
           <div class="loading-logo" id="loading-logo">
             <img src="assets/shared/logo.jpg" alt="Lemond Logo" class="img-hide-on-error">
@@ -61,7 +61,7 @@
           <div class="pulse-ring pulse-ring-delay-1" id="pulse-ring-2"></div>
           <div class="pulse-ring pulse-ring-delay-2" id="pulse-ring-3"></div>
         </div>
-        <!-- TEXTO DEBIJO DEL LOGO -->
+        <!-- TEXT BELOW THE LOGO -->
         <p class="start-prompt-text" id="start-prompt-text">Press Screen to continue</p>
       </div>
     </div>
@@ -134,6 +134,18 @@
 
   </main>
 
+  <!-- WELCOME NOTIFICATION: one-time toast, shown via JS right after the
+       loading screen finishes (see showWelcomeNotification in script.js).
+       Starts off-screen/invisible (see .welcome-notification in style.css)
+       until the .visible class slides it in. -->
+  <div id="welcome-notification" class="welcome-notification" role="status" aria-live="polite">
+    <img src="assets/shared/notification-icon.png" alt="" class="welcome-notification-icon">
+    <div class="welcome-notification-text">
+      <p class="welcome-notification-title">Portfolio in the Works!</p>
+      <p class="welcome-notification-description">This space is evolving as I polish the visuals and add my latest work. You might notice some changes around here soon. Thanks for your patience!</p>
+    </div>
+  </div>
+
   <!-- SITE FOOTER NOTE: fixed (not part of document flow, so it can't
        affect scroll height/layout anywhere) and shared across every view
        instead of being duplicated into renderHomeView/renderProfileContent. -->
@@ -149,16 +161,16 @@
     <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
   </button>
 
-  <!-- LIGHTBOX PARA IMÁGENES DEL CARRUSEL -->
+  <!-- LIGHTBOX: full-screen viewer for carousel gallery images -->
   <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
     <div class="lightbox-overlay"></div>
     <button id="lightbox-close" class="lightbox-close" aria-label="Close image viewer">
       <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
     <div class="lightbox-content">
-      <img id="lightbox-image" src="" alt="Imagen ampliada">
+      <img id="lightbox-image" src="" alt="Enlarged image">
     </div>
-    <!-- Botones de navegación del lightbox -->
+    <!-- Lightbox navigation buttons -->
     <button id="lightbox-prev" class="lightbox-nav lightbox-prev" aria-label="Previous image">
       <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
     </button>

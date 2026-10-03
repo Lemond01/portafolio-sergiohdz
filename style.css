@@ -697,14 +697,13 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   width: var(--project-card-size);
 }
 
-/* Mirror-shine sweep, brought over from the old welcome-screen cards.
-   Positioned with a static `left`, then moved entirely via `transform:
-   translateX()` in the animation below — animating `left` directly would
-   run a layout-eligible property in an infinite loop on every card in the
-   carousel at once, forever, instead of a GPU-compositable one. The
-   translateX percentages below are relative to *this element's own* 60%-
-   wide box, so -167%/250% reproduce the same -100%/150%-of-parent travel
-   the old `left` version had. */
+/* Mirror-shine sweep. Positioned with a static `left`, then moved entirely
+   via `transform: translateX()` in the animation below, so the infinite
+   per-card animation stays GPU-compositable instead of running a layout-
+   eligible property on every card at once, forever. The translateX
+   percentages are relative to *this element's own* 60%-wide box, so
+   -167%/250% give the same -100%/150%-of-parent travel distance a plain
+   `left` animation would. */
 .project-card::after {
   content: '';
   position: absolute;
@@ -758,12 +757,11 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 /* The card whose project is currently open — a little bigger as a visual
    anchor, no hover reaction (it's already "selected"). Grows via
-   transform: scale() anchored top-left (GPU-accelerated, doesn't force a
-   layout recalc every frame the way animating width does — that's what
-   made it feel sluggish/janky before). The card right after it gets a
-   matching margin-left so it's still pushed over, keeping the normal gap
-   instead of being covered by the overlap. Both transition on the same
-   duration/easing so the grow and the push move in sync. */
+   transform: scale() anchored top-left (GPU-accelerated, avoids a layout
+   recalc every frame the way animating width would). The card right after
+   it gets a matching margin-left so it's still pushed over, keeping the
+   normal gap instead of being covered by the overlap. Both transition on
+   the same duration/easing so the grow and the push move in sync. */
 .project-card.selected {
   transform: scale(1.12);
   z-index: 2;
@@ -864,6 +862,39 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 .project-card.filtered-out { display: none; }
 
+/* Decorative bookend cards (welcome/grid logos) at the very start and end
+   of the carousel — same size/entrance as a real project card (still
+   .project-card underneath), but no title, no engine tag, and no project
+   behind them to open, so they're excluded from the click/FLIP-reorder
+   logic in script.js and marked aria-hidden instead of being a keyboard-
+   focusable dead end. */
+.bookend-card {
+  cursor: default;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  background: rgba(50, 50, 50, 0.5);
+}
+
+/* The mirror-shine sweep (.project-card::after) reads as a subtle
+   highlight traveling over a busy photo, but on these flat, uniform-gray
+   cards the same traveling band just looks like one side randomly
+   darkening. Dropped entirely here. */
+.bookend-card::after {
+  content: none;
+}
+
+.bookend-card:hover {
+  background: rgba(60, 60, 60, 0.55);
+}
+
+.bookend-card-icon {
+  width: 42%;
+  height: 42%;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
 /* Real, shippable work should read as the main event — "coming soon"
    placeholders stay in the carousel (so the full scope of what's planned
    is still visible) but pulled back so they don't compete for attention.
@@ -875,15 +906,14 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
      properties they touch: with opacity carrying the dimming, every
      coming-soon card would fade all the way up to full brightness during
      its entrance and only THEN snap down to dimmed once the animation
-     released — a visibly different, glitchy-looking entrance versus real
-     cards. `filter` isn't touched by the entrance animation at all, so it
-     can never fight it. Also restates the base .project-card transition
-     list in full (rather than adding transition: opacity/filter on its
-     own) because a `transition` declaration replaces the whole list from
-     a less-specific rule instead of merging with it — the shorter version
-     this replaced had silently dropped the transform/background/
-     border-color transitions, which is why hover/unhover here used to
-     look so much more abrupt than on real project cards. */
+     released, a visibly different entrance than real cards get. `filter`
+     isn't touched by the entrance animation at all, so it can never fight
+     it. Also restates the base .project-card transition list in full
+     (rather than adding transition: opacity/filter on its own) because a
+     `transition` declaration replaces the whole list from a less-specific
+     rule instead of merging with it — a shorter list here would silently
+     drop the transform/background/border-color transitions, making hover/
+     unhover noticeably more abrupt than on real project cards. */
   filter: grayscale(0.35) brightness(0.65);
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
               margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
@@ -931,9 +961,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   border-right: 1px dashed rgba(255, 255, 255, 0.15);
   /* Matches .project-card's own margin-left transition exactly (same
      duration/easing) so when the last real card grows and pushes this
-     over, both move in sync — without this the divider was snapping to
-     its new position instantly while the card next to it eased into its
-     grown size, which is what read as "brusco". */
+     over, both move in sync instead of the divider snapping to its new
+     position instantly while the card eases into its grown size. */
   transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1416,7 +1445,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   height: 100%;
 }
 
-/* ----- START PROMPT - Contenedor clickeable ----- */
+/* ----- START PROMPT - clickable container ----- */
 .start-prompt {
   position: absolute;
   top: 0;
@@ -1432,7 +1461,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   z-index: 10;
 }
 
-/* ----- LOGO WRAPPER: Logo + Pulse Rings centrados ----- */
+/* ----- LOGO WRAPPER: logo + pulse rings, centered ----- */
 .logo-wrapper {
   position: relative;
   width: 120px;
@@ -1453,7 +1482,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   box-shadow: 0 0 40px rgba(0, 195, 255, 0.3);
 }
 
-/* Logo con animación de beat (se activa desde JS) */
+/* Logo with a beating animation, activated from JS */
 .loading-logo.beating {
   animation: single-beat 2s infinite ease-in-out;
 }
@@ -1466,7 +1495,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   display: block;
 }
 
-/* Pulse rings ocultos inicialmente */
+/* Pulse rings, hidden initially */
 .pulse-ring {
   position: absolute;
   /* Fixed at the *final* (fully expanded) size — the "growing" look now
@@ -1493,7 +1522,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 .pulse-ring-delay-1 { border-color: rgba(0, 230, 255, 0.9); }
 .pulse-ring-delay-2 { border-color: rgba(100, 220, 255, 0.8); }
 
-/* ----- TEXTO DEBAJO DEL LOGO ----- */
+/* ----- TEXT BELOW THE LOGO ----- */
 .start-prompt-text {
   font-size: 1rem;
   font-weight: 400;
@@ -1506,7 +1535,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   transition: color 0.3s ease;
 }
 
-/* Estado de loading (cuando ya se presionó) */
+/* Loading state, once the start prompt has been pressed */
 .start-prompt-text.loading {
   color: rgba(255, 255, 255, 0.7);
   animation: pulseTextLoading 1s ease-in-out infinite;
@@ -1523,7 +1552,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ============================================================
-   LIGHTBOX PARA IMÁGENES DEL CARRUSEL
+   LIGHTBOX — gallery image viewer
    ============================================================ */
 .lightbox {
   position: fixed;
@@ -1611,7 +1640,7 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 }
 
 /* ============================================================
-   LIGHTBOX - NAVEGACIÓN
+   LIGHTBOX — navigation buttons
    ============================================================ */
 .lightbox-nav {
   position: fixed;
@@ -1663,10 +1692,8 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 
 /* ============================================================
    COMING SOON MESSAGE
-   Was being appended to <body> with no CSS at all, so it rendered as
-   plain unstyled text at the very bottom of the document — pushing the
-   page taller and popping the scrollbar. Fixed viewport overlay instead,
-   matching the lightbox/search-overlay pattern used everywhere else.
+   Fixed viewport overlay, matching the lightbox/search-overlay pattern
+   used elsewhere.
    ============================================================ */
 .coming-soon-message {
   position: fixed;
@@ -1736,6 +1763,62 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
 @keyframes comingSoonPop {
   from { opacity: 0; transform: scale(0.92); }
   to   { opacity: 1; transform: scale(1); }
+}
+
+/* ============================================================
+   WELCOME NOTIFICATION (one-time toast shown right after the loading
+   screen finishes — see showWelcomeNotification in script.js)
+   ============================================================ */
+.welcome-notification {
+  position: fixed;
+  top: calc(1.5rem + env(safe-area-inset-top, 0px));
+  right: calc(1.25rem + env(safe-area-inset-right, 0px));
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1rem;
+  width: min(460px, calc(100vw - 2.5rem));
+  padding: 1.5rem 1.65rem;
+  border-radius: 1.25rem;
+  background: rgba(40, 40, 40, 0.55);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateX(calc(100% + 2rem));
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.welcome-notification.visible {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.welcome-notification-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.welcome-notification-text { min-width: 0; }
+
+.welcome-notification-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.welcome-notification-description {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ============================================================
@@ -1858,10 +1941,9 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   to   { opacity: 1; }
 }
 
-/* box-shadow isn't GPU-compositable (it repaints every frame), so the
-   "glow intensifies with the beat" part was dropped here — the static
-   glow on .loading-logo (box-shadow, unanimated) stays as-is, and the
-   beat itself now only drives `transform: scale()`. */
+/* Drives only `transform: scale()` — box-shadow isn't GPU-compositable
+   (it repaints every frame), so the glow stays as a static, unanimated
+   box-shadow on .loading-logo instead of intensifying with the beat. */
 @keyframes single-beat {
   0%   { transform: scale(1); }
   25%  { transform: scale(1.15); }
@@ -1870,12 +1952,11 @@ body.background-others   { background: linear-gradient(120deg, #000000, #1a0033)
   100% { transform: scale(1); }
 }
 
-/* "Sonar ping" ring: same growing-and-fading look as the original
-   width/height/border-width version, but achieved purely with transform
-   (scale) + opacity so it's fully GPU-compositable instead of forcing a
-   layout+paint on every frame. .pulse-ring is already sized to the final
-   (100%) dimensions, so 0.3 here is that original small starting size as
-   a fraction of the final one (e.g. 120px start / 400px final). */
+/* "Sonar ping" ring: a growing-and-fading look achieved purely with
+   transform (scale) + opacity, fully GPU-compositable instead of forcing
+   a layout+paint on every frame. .pulse-ring is already sized to its
+   final (100%) dimensions, so 0.3 here is the small starting size as a
+   fraction of that final one (e.g. 120px start / 400px final). */
 @keyframes pulse-wave {
   0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(0.3); }
   20%  { opacity: 0.7; }
